@@ -6,6 +6,15 @@
   <meta name="theme-color" content="#0f9d58" />
   <title>ZelaAi — Entrar</title>
   <link rel="stylesheet" href="css/style.css" />
+  <script>
+    (function () {
+      try {
+        var t = localStorage.getItem("zelaai.theme")
+             || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+        document.documentElement.setAttribute("data-theme", t);
+      } catch (_) {}
+    })();
+  </script>
 </head>
 <body>
   <div class="auth-wrap">
@@ -13,6 +22,8 @@
       <span class="brand-mark">Z</span>
       <span>ZelaAi</span>
     </a>
+
+    <div class="auth-top-actions" id="auth-top-actions"></div>
 
     <div class="auth-card">
       <h1>Sua cidade, sua voz.</h1>

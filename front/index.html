@@ -10,9 +10,17 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
         integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
         crossorigin="" />
+  <script>
+    (function () {
+      try {
+        var t = localStorage.getItem("zelaai.theme")
+             || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+        document.documentElement.setAttribute("data-theme", t);
+      } catch (_) {}
+    })();
+  </script>
 </head>
 <body>
-  <!-- HEADER full width -->
   <header class="header">
     <div class="header-inner">
       <a class="brand" href="index.html">
@@ -20,10 +28,12 @@
         <span>ZelaAi</span>
       </a>
       <nav class="nav-links">
+        <a href="index.html" class="active">Feed</a>
+        <a href="dashboard.html">Dashboard</a>
         <a href="mandates.html" id="mand-link">Termômetro</a>
         <a href="my.html" id="my-link">Minhas</a>
       </nav>
-      <div>
+      <div class="header-actions">
         <span class="user-tag" id="user-tag">…</span>
         <a class="logout" href="#" id="logout-link">sair</a>
       </div>
@@ -39,6 +49,13 @@
 
       <div class="search-bar">
         <input id="search" type="search" placeholder="Buscar por título, descrição, cidade ou CEP..." />
+      </div>
+
+      <div class="filter-chips" id="status-chips" role="tablist" aria-label="Filtrar por status">
+        <button type="button" data-status="all" class="active">Todas</button>
+        <button type="button" data-status="open">Abertas</button>
+        <button type="button" data-status="in_progress">Em andamento</button>
+        <button type="button" data-status="resolved">Resolvidas</button>
       </div>
 
       <div class="feed-header">

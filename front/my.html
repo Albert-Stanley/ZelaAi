@@ -6,6 +6,15 @@
   <meta name="theme-color" content="#0f9d58" />
   <title>ZelaAi — Minhas Ocorrências</title>
   <link rel="stylesheet" href="css/style.css" />
+  <script>
+    (function () {
+      try {
+        var t = localStorage.getItem("zelaai.theme")
+             || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+        document.documentElement.setAttribute("data-theme", t);
+      } catch (_) {}
+    })();
+  </script>
 </head>
 <body>
   <header class="header">
@@ -16,10 +25,11 @@
       </a>
       <nav class="nav-links">
         <a href="index.html">Feed</a>
+        <a href="dashboard.html">Dashboard</a>
         <a href="mandates.html">Termômetro</a>
         <a href="my.html" class="active">Minhas</a>
       </nav>
-      <div>
+      <div class="header-actions">
         <span class="user-tag" id="user-tag"></span>
         <a class="logout" href="#" id="logout-link">sair</a>
       </div>

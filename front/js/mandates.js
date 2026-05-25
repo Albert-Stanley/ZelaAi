@@ -1,5 +1,8 @@
 import { Api } from "./api.js";
 import { Auth } from "./auth.js";
+import { Theme } from "./theme.js";
+
+Theme.mountToggle(document.querySelector(".header-actions"));
 
 const isLogged = Auth.isLogged();
 const user = Auth.user();

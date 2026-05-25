@@ -1,5 +1,8 @@
 import { Api } from "./api.js";
 import { Auth } from "./auth.js";
+import { Theme } from "./theme.js";
+
+Theme.mountToggle(document.querySelector(".header-actions"));
 
 Auth.requireAuth();
 

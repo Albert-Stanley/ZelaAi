@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <meta name="theme-color" content="#0f9d58" />
+  <title>ZelaAi — Dashboard</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <script>
+    // evita flash de tema errado
+    (function () {
+      try {
+        var t = localStorage.getItem("zelaai.theme")
+             || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+        document.documentElement.setAttribute("data-theme", t);
+      } catch (_) {}
+    })();
+  </script>
+</head>
+<body>
+  <header class="header">
+    <div class="header-inner">
+      <a class="brand" href="index.html">
+        <span class="brand-mark">Z</span>
+        <span>ZelaAi</span>
+      </a>
+      <nav class="nav-links">
+        <a href="index.html">Feed</a>
+        <a href="dashboard.html" class="active">Dashboard</a>
+        <a href="mandates.html">Termômetro</a>
+        <a href="my.html" id="my-link">Minhas</a>
+      </nav>
+      <div class="header-actions">
+        <span class="user-tag" id="user-tag">…</span>
+        <a class="logout" href="#" id="logout-link">sair</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="app wide">
+    <div class="content">
+      <h2 class="page-title">Dashboard & Relatórios</h2>
+      <p class="page-sub">Panorama em tempo real das ocorrências, votos e gestões cadastradas.</p>
+
+      <!-- KPIs -->
+      <div class="dash-grid" id="kpis">
+        <div class="skeleton" style="height:108px;"></div>
+        <div class="skeleton" style="height:108px;"></div>
+        <div class="skeleton" style="height:108px;"></div>
+        <div class="skeleton" style="height:108px;"></div>
+      </div>
+
+      <!-- Status + Categorias -->
+      <div class="dash-row">
+        <div class="dash-section">
+          <h3>Distribuição por status <span class="hint-tag">tempo real</span></h3>
+          <div class="chart-host short"><canvas id="ch-status"></canvas></div>
+        </div>
+        <div class="dash-section">
+          <h3>Top categorias</h3>
+          <div class="chart-host short"><canvas id="ch-category"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Evolução por mês -->
+      <div class="dash-section">
+        <h3>Evolução por mês <span class="hint-tag">últimos 6 meses</span></h3>
+        <div class="chart-host"><canvas id="ch-month"></canvas></div>
+      </div>
+
+      <!-- Top cidades + Top votadas -->
+      <div class="dash-row">
+        <div class="dash-section">
+          <h3>Cidades com mais reportes</h3>
+          <div class="top-list" id="top-cities">
+            <div class="empty-mini">carregando…</div>
+          </div>
+        </div>
+        <div class="dash-section">
+          <h3>Ocorrências mais votadas</h3>
+          <div class="top-list" id="top-voted">
+            <div class="empty-mini">carregando…</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tempo médio de resolução + Engajamento -->
+      <div class="dash-row">
+        <div class="dash-section">
+          <h3>Taxa de resolução</h3>
+          <div class="chart-host short"><canvas id="ch-resolution"></canvas></div>
+        </div>
+        <div class="dash-section">
+          <h3>Distribuição por gestão</h3>
+          <div class="top-list" id="top-mandates">
+            <div class="empty-mini">carregando…</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script type="module" src="js/dashboard.js"></script>
+</body>
+</html>

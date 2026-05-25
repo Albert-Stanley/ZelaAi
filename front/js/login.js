@@ -1,5 +1,8 @@
 import { Api, ApiError } from "./api.js";
 import { Auth, toast } from "./auth.js";
+import { Theme } from "./theme.js";
+
+Theme.mountToggle(document.getElementById("auth-top-actions"));
 
 // Se já estiver logado, manda direto pro feed
 if (Auth.isLogged()) {
