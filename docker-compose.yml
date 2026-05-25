@@ -1,0 +1,54 @@
+# =============================================================================
+# ZelaAi — docker-compose
+#   - postgres  (banco)
+#   - backend   (Haskell + Servant na :5050)
+#   - front     (nginx servindo a pasta front/ na :8080)
+# =============================================================================
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: zelaai-pg
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: zelaai-api
+    environment:
+      DATABASE_URL: "host=postgres port=5432 user=postgres dbname=postgres password=postgres"
+      JWT_SECRET: "${JWT_SECRET:-zelaai_dev_secret}"
+    ports:
+      - "5050:5050"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  front:
+    image: nginx:1.27-alpine
+    container_name: zelaai-front
+    volumes:
+      - ./front:/usr/share/nginx/html:ro
+      - ./docker/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  pgdata:

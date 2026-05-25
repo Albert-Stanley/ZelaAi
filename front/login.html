@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <meta name="theme-color" content="#0f9d58" />
+  <title>ZelaAi — Entrar</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div class="auth-wrap">
+    <a class="auth-hero" href="index.html">
+      <span class="brand-mark">Z</span>
+      <span>ZelaAi</span>
+    </a>
+
+    <div class="auth-card">
+      <h1>Sua cidade, sua voz.</h1>
+      <p class="subtitle">Reporte, vote e acompanhe o que está sendo resolvido.</p>
+
+      <div class="tabs">
+        <button id="tab-login" class="active" type="button">Entrar</button>
+        <button id="tab-signup" type="button">Cadastrar</button>
+      </div>
+
+      <!-- LOGIN -->
+      <form id="form-login">
+        <div class="field">
+          <label for="login-username">Username</label>
+          <input id="login-username" type="text" autocomplete="username" required placeholder="seuusuario" />
+        </div>
+        <div class="field">
+          <label for="login-password">Senha</label>
+          <input id="login-password" type="password" autocomplete="current-password" required placeholder="••••••••" />
+        </div>
+        <button class="btn" type="submit" id="btn-login">Entrar</button>
+      </form>
+
+      <!-- SIGNUP -->
+      <form id="form-signup" style="display:none;">
+        <div class="field">
+          <label for="su-name">Nome completo</label>
+          <input id="su-name" type="text" required maxlength="100" placeholder="Como te chamamos?" />
+        </div>
+        <div class="field">
+          <label for="su-username">Username</label>
+          <input id="su-username" type="text" required maxlength="30" placeholder="único, sem espaços" />
+        </div>
+        <div class="field">
+          <label for="su-password">Senha</label>
+          <input id="su-password" type="password" required maxlength="20" placeholder="••••••••" />
+          <div class="hint">até 20 caracteres</div>
+        </div>
+        <div class="field">
+          <label for="su-cep">CEP</label>
+          <input id="su-cep" type="text" inputmode="numeric" pattern="\d{8}" required maxlength="8" placeholder="00000000" />
+          <div class="hint">só números, 8 dígitos. Vamos puxar sua cidade e estado.</div>
+        </div>
+        <button class="btn" type="submit" id="btn-signup">Criar conta</button>
+      </form>
+
+      <div style="margin-top:20px;text-align:center;font-size:0.82rem;color:var(--text-muted);">
+        ou <a href="index.html" style="font-weight:600;">explorar sem entrar →</a>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="js/login.js"></script>
+</body>
+</html>

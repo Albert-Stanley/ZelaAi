@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <meta name="theme-color" content="#0f9d58" />
+  <title>ZelaAi — Termômetro de Gestões</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <header class="header">
+    <div class="header-inner">
+      <a class="brand" href="index.html">
+        <span class="brand-mark">Z</span>
+        <span>ZelaAi</span>
+      </a>
+      <nav class="nav-links">
+        <a href="index.html">Feed</a>
+        <a href="mandates.html" class="active">Termômetro</a>
+        <a href="my.html" id="my-link">Minhas</a>
+      </nav>
+      <div>
+        <span class="user-tag" id="user-tag"></span>
+        <a class="logout" href="#" id="logout-link">sair</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="app">
+    <div class="content">
+      <h2 class="page-title">Termômetro de Gestões</h2>
+      <p class="page-sub">
+        Cruzamento entre ocorrências reportadas pela população e os mandatos vigentes.
+        Quanto mais verde, melhor a gestão resolveu.
+      </p>
+
+      <div id="list">
+        <div class="skeleton skeleton-card"></div>
+        <div class="skeleton skeleton-card"></div>
+      </div>
+    </div>
+  </main>
+
+  <script type="module" src="js/mandates.js"></script>
+</body>
+</html>

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <meta name="theme-color" content="#0f9d58" />
+  <title>ZelaAi — Ocorrência</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <header class="header">
+    <div class="header-inner">
+      <a class="brand" href="index.html">
+        <span class="brand-mark">Z</span>
+        <span>ZelaAi</span>
+      </a>
+      <nav class="nav-links">
+        <a href="index.html">Feed</a>
+        <a href="mandates.html">Termômetro</a>
+        <a href="my.html" id="my-link">Minhas</a>
+      </nav>
+      <div>
+        <span class="user-tag" id="user-tag"></span>
+        <a class="logout" href="#" id="logout-link">sair</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="app">
+    <div class="content detail">
+      <a class="back-link" href="index.html">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+        Voltar ao feed
+      </a>
+
+      <div id="content">
+        <div class="skeleton skeleton-card"></div>
+      </div>
+    </div>
+  </main>
+
+  <script type="module" src="js/occurrence.js"></script>
+</body>
+</html>

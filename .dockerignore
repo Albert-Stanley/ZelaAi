@@ -1,0 +1,44 @@
+# =============================================================================
+# .dockerignore — não enviar pro build context
+# =============================================================================
+
+# build artifacts
+dist-newstyle/
+dist/
+.stack-work/
+.cabal-sandbox/
+cabal.sandbox.config
+
+# git
+.git/
+.gitignore
+.github/
+
+# editor
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# logs / temp
+*.log
+*.tmp
+/tmp/
+
+# docs (não precisam ir pra imagem)
+DOCS.md
+CHANGELOG.md
+README.md
+
+# front (servido pelo container nginx, não vai pro backend)
+front/
+
+# scripts locais
+zelaai.sh
+seed-demo.sh
+smoke-test.sh
+
+# env files
+.env
+.env.*
