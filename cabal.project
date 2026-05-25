@@ -1,0 +1,10 @@
+-- Configuração do cabal para o ZelaAi.
+-- Mantém o build reprodutível e habilita binários optimizados em release.
+
+packages: .
+
+-- Dev: optimization 0 (compila rápido). No Docker forçamos -O1 via cabal flag.
+optimization: False
+
+-- Resolver a versão do GHC fica a cargo do ambiente
+-- (no Docker usamos haskell:9.6.4-slim; localmente, ghcup com 9.6+)

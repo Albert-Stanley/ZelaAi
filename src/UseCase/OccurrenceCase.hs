@@ -120,9 +120,9 @@ updateStatus pool oidInt newSt = do
           now <- getCurrentTime
           let baseUpd = [E.OccurrenceStatus =. newSt]
               fullUpd = if newSt == "resolved"
-                          then E.OccurrenceResolvedAt =. Just now : baseUpd
+                          then (E.OccurrenceResolvedAt =. Just now) : baseUpd
                           else if newSt == "open"
-                                 then E.OccurrenceResolvedAt =. Nothing : baseUpd
+                                 then (E.OccurrenceResolvedAt =. Nothing) : baseUpd
                                  else baseUpd
           runSqlPool (update oid fullUpd) pool
           Logs.logInfo $ "occurrence " ++ show oidInt ++ " -> status " ++ newSt

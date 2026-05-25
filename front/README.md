@@ -8,15 +8,19 @@ Frontend em Vanilla JS + HTML + CSS. Mobile-first.
 front/
 ├── index.html            Feed público + mapa + modal de criar ocorrência
 ├── login.html            Login + Cadastro
-├── occurrence.html       Detalhe da ocorrência + voto
+├── occurrence.html       Detalhe da ocorrência + voto + status
+├── mandates.html         Termômetro de gestão (score por mandato)
+├── my.html               Minhas ocorrências (UC10)
 ├── css/
-│   └── style.css         Estilos (tema verde, mobile-first)
+│   └── style.css         Design system mobile-first (Inter + Plus Jakarta)
 └── js/
     ├── api.js            Cliente HTTP da API (todos endpoints encapsulados)
     ├── auth.js           Sessão local (JWT no localStorage) + helper toast
     ├── login.js          Lógica do login/cadastro
     ├── feed.js           Lógica do feed + mapa + criar ocorrência
-    └── occurrence.js     Lógica do detalhe + voto
+    ├── occurrence.js     Lógica do detalhe + voto + status
+    ├── mandates.js       Lógica do termômetro
+    └── my.js             Lógica do "Minhas ocorrências"
 ```
 
 ## Como rodar
@@ -39,7 +43,18 @@ cd /Users/marcelosilva/ZelaAi/front
 python3 -m http.server 8080
 ```
 
-Depois abre no navegador: <http://localhost:8080/login.html>
+Depois abre no navegador: <http://localhost:8080/index.html>
+
+### Alternativa: tudo via Docker
+
+Na raiz do projeto:
+
+```bash
+docker compose up -d --build
+# front  → http://localhost:8080
+# api    → http://localhost:5050
+# pg     → localhost:5432
+```
 
 ## Roteiro de teste end-to-end (manual)
 

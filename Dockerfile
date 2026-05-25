@@ -5,19 +5,26 @@
 # =============================================================================
 
 # ----------------------------- 1) builder -----------------------------------
-FROM haskell:9.6.4-slim AS builder
+FROM haskell:9.6-slim AS builder
 
 WORKDIR /build
 
-# instala libs nativas necessárias (postgres, ssl)
+# instala libs nativas necessárias
+# postgresql-libpq-configure >= 0.11 exige PG >= 14; usa PGDG para garantir a versão certa
 RUN apt-get update && apt-get install -y --no-install-recommends \
+      curl gnupg ca-certificates \
+    && curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc \
+       | gpg --dearmor -o /usr/share/keyrings/pgdg.gpg \
+    && . /etc/os-release \
+    && echo "deb [signed-by=/usr/share/keyrings/pgdg.gpg] https://apt.postgresql.org/pub/repos/apt ${VERSION_CODENAME}-pgdg main" \
+       > /etc/apt/sources.list.d/pgdg.list \
+    && apt-get update && apt-get install -y --no-install-recommends \
       libpq-dev \
       zlib1g-dev \
-      ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# copia apenas o cabal primeiro pra aproveitar o cache de deps
-COPY ZelaAi.cabal cabal.project* ./
+# copia o cabal/project primeiro pra aproveitar o cache de deps
+COPY ZelaAi.cabal cabal.project ./
 RUN cabal update && cabal build --only-dependencies -j
 
 # agora copia o código e builda
@@ -25,7 +32,8 @@ COPY . .
 RUN cabal build exe:ZelaAi -j
 
 # copia o binário pra um lugar previsível
-RUN cp "$(cabal list-bin exe:ZelaAi)" /build/ZelaAi-bin
+RUN cp "$(cabal list-bin exe:ZelaAi)" /build/ZelaAi-bin && \
+    strip /build/ZelaAi-bin || true
 
 # ----------------------------- 2) runtime -----------------------------------
 FROM debian:bookworm-slim
