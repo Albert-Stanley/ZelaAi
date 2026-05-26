@@ -44,3 +44,22 @@ export const Theme = {
 
 // roda assim que o módulo é importado para evitar flash
 Theme.init();
+
+// se o usuário logado é admin, insere o link "Admin" na nav
+(function injectAdminLink() {
+  try {
+    const raw = localStorage.getItem("zelaai.session");
+    if (!raw) return;
+    const sess = JSON.parse(raw);
+    if (sess?.user?.userRole !== "admin") return;
+    document.addEventListener("DOMContentLoaded", () => {
+      const nav = document.querySelector(".nav-links");
+      if (!nav || nav.querySelector('a[href="admin.html"]')) return;
+      const a = document.createElement("a");
+      a.href = "admin.html";
+      a.textContent = "Admin";
+      if (location.pathname.endsWith("admin.html")) a.classList.add("active");
+      nav.appendChild(a);
+    });
+  } catch (_) {}
+})();

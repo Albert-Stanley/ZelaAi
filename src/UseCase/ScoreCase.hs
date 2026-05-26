@@ -36,7 +36,10 @@ calculateScore pool midInt = do
       let mandateDto = MC.mandateToDto (Entity mid m) polEntity
 
       -- ocorrencias do mandato
-      occs <- runSqlPool (selectList [E.OccurrenceMandateId ==. Just mid] []) pool
+      occs <- runSqlPool (selectList
+                [ E.OccurrenceMandateId ==. Just mid
+                , E.OccurrenceDeletedAt ==. Nothing
+                ] []) pool
       let totalCount = length occs
           resolved   = [ (E.occurrenceCreatedAt o, rs)
                        | Entity _ o <- occs

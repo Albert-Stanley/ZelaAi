@@ -6,6 +6,8 @@ module Dto.OccurrenceDto
   ( CreateOccurrenceDto(..)
   , OccurrenceResponseDto(..)
   , UpdateStatusDto(..)
+  , UpdateOccurrenceDto(..)
+  , NearbyOccurrenceDto(..)
   ) where
 
 import Data.Aeson (FromJSON, ToJSON)
@@ -26,6 +28,20 @@ data CreateOccurrenceDto = CreateOccurrenceDto
 data UpdateStatusDto = UpdateStatusDto
   { newStatus :: String       -- "open" | "in_progress" | "resolved"
   } deriving (Generic, Show, FromJSON, ToJSON)
+
+-- | Patch parcial: todos os campos opcionais. Apenas dono ou admin podem editar.
+data UpdateOccurrenceDto = UpdateOccurrenceDto
+  { upTitle       :: Maybe String
+  , upDescription :: Maybe String
+  , upPhotoUrl    :: Maybe String
+  , upCategoryId  :: Maybe Int64
+  } deriving (Generic, Show, FromJSON, ToJSON)
+
+-- | Versão estendida do response com distância em km (geo-search).
+data NearbyOccurrenceDto = NearbyOccurrenceDto
+  { nearOcc      :: OccurrenceResponseDto
+  , nearDistance :: Double          -- em km
+  } deriving (Generic, Show, ToJSON)
 
 data OccurrenceResponseDto = OccurrenceResponseDto
   { occId          :: Int64

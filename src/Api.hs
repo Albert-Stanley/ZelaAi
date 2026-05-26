@@ -27,6 +27,8 @@ import qualified Dto.CategoryDto as C
 import qualified Dto.OccurrenceDto as O
 import qualified Dto.VoteDto as V
 import qualified Dto.MandateDto as M
+import qualified Dto.CommentDto as Cm
+import qualified UseCase.AdminCase as AC
 import qualified Presentation.Controllers as Ctrl
 
 -- Health
@@ -122,6 +124,60 @@ type API =
         :> Post '[JSON] M.MandateResponseDto
   :<|> "mandates" :> Get '[JSON] [M.MandateResponseDto]
 
+  -- Occurrences: edit/delete + geo
+  :<|> "occurrences"
+        :> Capture "id" Int64
+        :> Header "Authorization" T.Text
+        :> ReqBody '[JSON] O.UpdateOccurrenceDto
+        :> Patch '[JSON] O.OccurrenceResponseDto
+  :<|> "occurrences"
+        :> Capture "id" Int64
+        :> Header "Authorization" T.Text
+        :> Delete '[JSON] NoContent
+  :<|> "occurrences"
+        :> "nearby"
+        :> QueryParam "lat"      Double
+        :> QueryParam "lng"      Double
+        :> QueryParam "radiusKm" Double
+        :> Get '[JSON] [O.NearbyOccurrenceDto]
+
+  -- Comments
+  :<|> "occurrences"
+        :> Capture "id" Int64
+        :> "comments"
+        :> Header "Authorization" T.Text
+        :> ReqBody '[JSON] Cm.CreateCommentDto
+        :> Post '[JSON] Cm.CommentResponseDto
+  :<|> "occurrences"
+        :> Capture "id" Int64
+        :> "comments"
+        :> Get '[JSON] [Cm.CommentResponseDto]
+  :<|> "comments"
+        :> Capture "id" Int64
+        :> Header "Authorization" T.Text
+        :> Delete '[JSON] NoContent
+  :<|> "users" :> "me" :> "comments"
+        :> Header "Authorization" T.Text
+        :> Get '[JSON] [Cm.CommentResponseDto]
+
+  -- Admin
+  :<|> "admin" :> "users"
+        :> Header "Authorization" T.Text
+        :> Get '[JSON] [D.UserResponseDto]
+  :<|> "admin" :> "users"
+        :> Capture "id" Int64
+        :> "role"
+        :> Header "Authorization" T.Text
+        :> ReqBody '[JSON] D.SetRoleDto
+        :> Patch '[JSON] D.UserResponseDto
+  :<|> "admin" :> "stats"
+        :> Header "Authorization" T.Text
+        :> Get '[JSON] AC.AdminStatsDto
+  :<|> "admin" :> "occurrences"
+        :> Capture "id" Int64
+        :> Header "Authorization" T.Text
+        :> Delete '[JSON] NoContent
+
 server :: ConnectionPool -> Server API
 server pool =
        helloHandler
@@ -141,6 +197,17 @@ server pool =
   :<|> Ctrl.mandateScoreController pool
   :<|> Ctrl.createMandateController pool
   :<|> Ctrl.listMandatesController pool
+  :<|> (\oid auth dto -> Ctrl.updateOccurrenceController pool auth oid dto)
+  :<|> (\oid auth     -> Ctrl.deleteOccurrenceController pool auth oid)
+  :<|> Ctrl.nearbyOccurrencesController pool
+  :<|> (\oid auth dto -> Ctrl.createCommentController pool auth oid dto)
+  :<|> Ctrl.listCommentsController pool
+  :<|> (\cid auth     -> Ctrl.deleteCommentController pool auth cid)
+  :<|> Ctrl.listMyCommentsController pool
+  :<|> Ctrl.adminListUsersController pool
+  :<|> (\uid auth dto -> Ctrl.adminSetUserRoleController pool auth uid dto)
+  :<|> Ctrl.adminStatsController pool
+  :<|> (\oid auth     -> Ctrl.adminDeleteOccurrenceController pool auth oid)
 
 app :: ConnectionPool -> Application
 app pool = serve (Proxy :: Proxy API) (server pool)

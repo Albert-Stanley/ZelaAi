@@ -44,7 +44,22 @@ seedDemoIfEmpty pool = do
 
 runSeed :: ConnectionPool -> UTCTime -> IO ()
 runSeed pool now = do
-  -- 1) usuario demo
+  -- 1) usuario admin
+  hashedAdmin <- Libs.hashPassword "admin1234"
+  let adminUser = E.User
+        { E.userName      = "Admin ZelaAi"
+        , E.userUsername  = "admin"
+        , E.userPassword  = hashedAdmin
+        , E.userCep       = "01310100"
+        , E.userCity      = "Sao Paulo"
+        , E.userUf        = "SP"
+        , E.userCreatedAt = now
+        , E.userRole      = "admin"
+        }
+  _ <- ensureUser pool adminUser
+  Logs.logInfo "  + user @admin (senha: admin1234, role=admin)"
+
+  -- 2) usuario demo
   hashed <- Libs.hashPassword "demo1234"
   let demoUser = E.User
         { E.userName      = "Cidadao Demo"
@@ -54,6 +69,7 @@ runSeed pool now = do
         , E.userCity      = "Sao Paulo"
         , E.userUf        = "SP"
         , E.userCreatedAt = now
+        , E.userRole      = "citizen"
         }
   uid <- ensureUser pool demoUser
   Logs.logInfo "  + user @demo (senha: demo1234)"
@@ -63,7 +79,8 @@ runSeed pool now = do
     h <- Libs.hashPassword "demo1234"
     ensureUser pool E.User
       { E.userName = n, E.userUsername = un, E.userPassword = h
-      , E.userCep = cep, E.userCity = c, E.userUf = u, E.userCreatedAt = now }
+      , E.userCep = cep, E.userCity = c, E.userUf = u, E.userCreatedAt = now
+      , E.userRole = "citizen" }
     ) extraUsers
   Logs.logInfo $ "  + " ++ show (length uids) ++ " usuarios extras"
 
@@ -108,6 +125,7 @@ runSeed pool now = do
           , E.occurrenceStatus      = status
           , E.occurrenceCreatedAt   = addUTCTime (negate (fromInteger daysAgo * 86400)) now
           , E.occurrenceResolvedAt  = if status == "resolved" then Just (addUTCTime (negate (fromInteger resolved * 86400)) now) else Nothing
+          , E.occurrenceDeletedAt   = Nothing
           }
 
   let occs =

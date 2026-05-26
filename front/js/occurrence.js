@@ -101,6 +101,29 @@ function render(o) {
       </div>
       ${statusBtns}
     </div>
+
+    <!-- ====== Comentários ====== -->
+    <section class="comments-section">
+      <div class="comments-header">
+        <h3>Comentários</h3>
+        <span class="count" id="cm-count">—</span>
+      </div>
+
+      ${isLogged ? `
+        <form id="cm-form" class="comment-compose">
+          <textarea id="cm-body" placeholder="Comentar como @${escapeHtml(user.userUsername)}…" required maxlength="1000"></textarea>
+          <button type="submit" class="btn small" id="cm-submit">Publicar</button>
+        </form>
+      ` : `
+        <div class="comment-login-prompt">
+          <a href="login.html">Entre</a> para comentar.
+        </div>
+      `}
+
+      <div class="comment-list" id="cm-list">
+        <div class="empty-mini">carregando comentários…</div>
+      </div>
+    </section>
   `;
 
   if (isLogged) {
@@ -109,7 +132,95 @@ function render(o) {
     contentEl.querySelectorAll("[data-st]").forEach(btn => {
       btn.addEventListener("click", () => doStatus(btn.dataset.st));
     });
+    document.getElementById("cm-form").addEventListener("submit", onCommentSubmit);
   }
+  loadComments();
+}
+
+// ---------- Comments ---------------------------------------------------------
+
+async function loadComments() {
+  try {
+    const list = await Api.listComments(occId);
+    renderComments(list);
+  } catch (err) {
+    const el = document.getElementById("cm-list");
+    if (el) el.innerHTML = `<div class="empty-mini">erro ao carregar: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+function renderComments(list) {
+  const el  = document.getElementById("cm-list");
+  const cnt = document.getElementById("cm-count");
+  if (cnt) cnt.textContent = `${list.length} ${list.length === 1 ? "comentário" : "comentários"}`;
+  if (!el) return;
+  if (list.length === 0) {
+    el.innerHTML = `<div class="empty-mini">Ainda sem comentários. Seja a primeira voz.</div>`;
+    return;
+  }
+  el.innerHTML = list.map(commentHtml).join("");
+  el.querySelectorAll("[data-act='del']").forEach(btn => {
+    btn.addEventListener("click", () => deleteComment(Number(btn.dataset.id)));
+  });
+}
+
+function commentHtml(c) {
+  const mine    = isLogged && c.commentUserId === user.userId;
+  const isAdmin = isLogged && user.userRole === "admin";
+  const showDel = mine || isAdmin;
+  return `
+    <article class="comment">
+      <div class="comment-avatar">${escapeHtml(c.commentUsername[0] || "?").toUpperCase()}</div>
+      <div class="comment-main">
+        <div class="comment-head">
+          <strong>@${escapeHtml(c.commentUsername)}</strong>
+          <span class="comment-time">${timeAgo(c.commentCreatedAt)}</span>
+          ${showDel ? `<button type="button" class="comment-del" data-act="del" data-id="${c.commentId}" aria-label="Apagar">×</button>` : ""}
+        </div>
+        <div class="comment-body">${escapeHtml(c.commentBody)}</div>
+      </div>
+    </article>`;
+}
+
+async function onCommentSubmit(e) {
+  e.preventDefault();
+  const body = document.getElementById("cm-body").value.trim();
+  if (!body) return;
+  const btn = document.getElementById("cm-submit");
+  btn.disabled = true;
+  btn.textContent = "…";
+  try {
+    await Api.createComment(occId, body, Auth.token());
+    document.getElementById("cm-body").value = "";
+    await loadComments();
+    toast("comentário publicado");
+  } catch (err) {
+    if (err.status === 401) { Auth.logout(); window.location.replace("login.html"); return; }
+    toast(err.message || "erro ao comentar", "error");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Publicar";
+  }
+}
+
+async function deleteComment(cid) {
+  if (!confirm("Apagar este comentário?")) return;
+  try {
+    await Api.deleteComment(cid, Auth.token());
+    await loadComments();
+  } catch (err) {
+    toast(err.message || "erro ao apagar", "error");
+  }
+}
+
+function timeAgo(iso) {
+  const d = new Date(iso);
+  const diff = (Date.now() - d.getTime()) / 1000;
+  if (diff < 60) return "agora";
+  if (diff < 3600) return `há ${Math.floor(diff/60)} min`;
+  if (diff < 86400) return `há ${Math.floor(diff/3600)}h`;
+  if (diff < 604800) return `há ${Math.floor(diff/86400)}d`;
+  return d.toLocaleDateString("pt-BR");
 }
 
 async function doVote() {

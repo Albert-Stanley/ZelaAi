@@ -99,6 +99,86 @@ mapToggleBtn.addEventListener("click", () => {
   if (!collapsed && map) requestAnimationFrame(() => map.invalidateSize());
 });
 
+// botão "Próximas a mim" (geo-search)
+const nearbyBtn = document.createElement("button");
+nearbyBtn.type = "button";
+nearbyBtn.className = "map-nearby";
+nearbyBtn.innerHTML = `
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/></svg>
+  Próximas a mim
+`;
+mapWrap.appendChild(nearbyBtn);
+
+let nearbyMode = false;
+let nearbyMarker = null;
+nearbyBtn.addEventListener("click", async () => {
+  if (nearbyMode) {
+    nearbyMode = false;
+    nearbyBtn.classList.remove("active");
+    nearbyBtn.querySelector("svg")?.nextSibling && (nearbyBtn.lastChild.textContent = " Próximas a mim");
+    if (nearbyMarker && map) { map.removeLayer(nearbyMarker); nearbyMarker = null; }
+    applyFilter();
+    return;
+  }
+  if (!navigator.geolocation) { toast("geolocalização indisponível", "error"); return; }
+  nearbyBtn.classList.add("loading");
+  navigator.geolocation.getCurrentPosition(async pos => {
+    try {
+      const { latitude: lat, longitude: lng } = pos.coords;
+      const results = await Api.nearbyOccurrences(lat, lng, 5);
+      nearbyMode = true;
+      nearbyBtn.classList.add("active");
+      nearbyBtn.lastChild.textContent = ` ${results.length} a ≤5km · limpar`;
+      // substitui o feed e markers pela versão nearby
+      const occs = results.map(r => r.nearOcc);
+      countEl.textContent = `${results.length} próximas`;
+      if (occs.length === 0) {
+        feedEl.innerHTML = `<div class="empty">Nenhuma ocorrência num raio de 5km de você.</div>`;
+      } else {
+        // adiciona distância no card
+        feedEl.innerHTML = results.map(r => cardWithDistance(r)).join("");
+      }
+      if (map) {
+        scheduleMarkerDraw(occs);
+        // pin "você está aqui"
+        if (nearbyMarker) map.removeLayer(nearbyMarker);
+        nearbyMarker = L.circleMarker([lat, lng], {
+          radius: 9, weight: 3, color: "#0d6efd", fillColor: "#0d6efd", fillOpacity: 0.4
+        }).addTo(map).bindPopup("<b>Você está aqui</b>");
+        map.setView([lat, lng], 14);
+      }
+    } catch (e) {
+      toast(e.message || "erro no geo-search", "error");
+    } finally {
+      nearbyBtn.classList.remove("loading");
+    }
+  }, () => {
+    nearbyBtn.classList.remove("loading");
+    toast("permissão de localização negada", "error");
+  }, { timeout: 6000 });
+});
+
+function cardWithDistance(r) {
+  const o = r.nearOcc;
+  const loc = o.occCity ? `${escapeHtml(o.occCity)}${o.occUf ? "/" + escapeHtml(o.occUf) : ""}` : "—";
+  return `
+    <article class="card" data-id="${o.occId}">
+      ${o.occPhotoUrl ? `<img class="card-img" src="${escapeAttr(o.occPhotoUrl)}" alt="" loading="lazy" decoding="async" onerror="this.style.display='none'" />` : ""}
+      <div class="card-body">
+        <div class="card-loc">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          ${loc} · <b style="color:var(--accent);">${r.nearDistance.toFixed(2)} km</b>
+        </div>
+        <h3>${escapeHtml(o.occTitle)}</h3>
+        <p>${escapeHtml(o.occDescription)}</p>
+        <div class="meta">
+          <span class="badge ${o.occStatus}">${labelStatus(o.occStatus)}</span>
+          <span class="vote-pill">${o.occVoteCount}</span>
+        </div>
+      </div>
+    </article>`;
+}
+
 // só carrega o mapa quando ele entra na viewport
 const io = new IntersectionObserver((entries) => {
   entries.forEach(e => {

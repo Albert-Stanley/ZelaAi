@@ -45,6 +45,7 @@ registerUser pool dto = do
                        , E.userCity      = city
                        , E.userUf        = uf
                        , E.userCreatedAt = now
+                       , E.userRole      = "citizen"
                        }
           newKey <- runSqlPool (insert user) pool
           Logs.logInfo $ "user registered: " ++ D.username dto
@@ -55,6 +56,7 @@ registerUser pool dto = do
             , D.userCep      = D.cep dto
             , D.userCity     = city
             , D.userUf       = uf
+            , D.userRole     = "citizen"
             }
 
 -- | Login: busca por username, valida bcrypt, gera JWT.
@@ -79,5 +81,6 @@ loginUser pool dto = do
                 , D.userCep      = E.userCep u
                 , D.userCity     = E.userCity u
                 , D.userUf       = E.userUf u
+                , D.userRole     = E.userRole u
                 }
             }

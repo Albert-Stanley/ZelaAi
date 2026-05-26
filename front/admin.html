@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <meta name="api-base" content="" />
+  <meta name="theme-color" content="#0f9d58" />
+  <title>ZelaAi — Admin</title>
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+  <link rel="apple-touch-icon" href="assets/favicon.svg" />
+  <link rel="manifest" href="manifest.json" />
+  <meta name="description" content="Painel administrativo do ZelaAi." />
+  <link rel="stylesheet" href="css/style.css" />
+  <script>
+    (function () {
+      try {
+        var t = localStorage.getItem("zelaai.theme")
+             || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+        document.documentElement.setAttribute("data-theme", t);
+      } catch (_) {}
+    })();
+  </script>
+</head>
+<body>
+  <header class="header">
+    <div class="header-inner">
+      <a class="brand" href="index.html">
+        <span class="brand-mark">Z</span>
+        <span>ZelaAi</span>
+      </a>
+      <nav class="nav-links">
+        <a href="index.html">Feed</a>
+        <a href="dashboard.html">Dashboard</a>
+        <a href="mandates.html">Termômetro</a>
+        <a href="my.html">Minhas</a>
+        <a href="admin.html" class="active">Admin</a>
+      </nav>
+      <div class="header-actions">
+        <span class="user-tag" id="user-tag"></span>
+        <a class="logout" href="#" id="logout-link">sair</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="app wide">
+    <div class="content">
+      <span class="eyebrow">Plataforma cívica · Painel administrativo</span>
+      <h2 class="page-title">Administração</h2>
+      <p class="page-sub">Estatísticas globais, gestão de usuários e moderação. Acesso restrito a usuários com role <code>admin</code>.</p>
+
+      <div id="forbidden" style="display:none;">
+        <div class="empty">
+          🔒 Acesso negado. Esta área é só para administradores.<br>
+          Volte ao <a href="index.html">feed</a> ou entre com uma conta de admin.
+        </div>
+      </div>
+
+      <div id="panel" style="display:none;">
+        <!-- Stats -->
+        <div class="dash-grid" id="adm-stats">
+          <div class="skeleton" style="height:108px;"></div>
+          <div class="skeleton" style="height:108px;"></div>
+          <div class="skeleton" style="height:108px;"></div>
+          <div class="skeleton" style="height:108px;"></div>
+        </div>
+
+        <!-- Usuários -->
+        <div class="dash-section">
+          <h3>Usuários cadastrados <span class="hint-tag" id="adm-users-count">—</span></h3>
+          <div class="admin-table" id="adm-users">
+            <div class="empty-mini">carregando…</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script type="module" src="js/admin.js"></script>
+  <script type="module" src="js/pwa.js"></script>
+</body>
+</html>

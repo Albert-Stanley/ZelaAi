@@ -32,6 +32,7 @@ User
     city       String
     uf         String
     createdAt  UTCTime
+    role       String default='citizen'
     UniqueUsername username
     deriving Show Generic
 
@@ -69,6 +70,14 @@ Occurrence
     status      String
     createdAt   UTCTime
     resolvedAt  UTCTime Maybe
+    deletedAt   UTCTime Maybe
+    deriving Show Generic
+
+Comment
+    occurrenceId OccurrenceId
+    userId       UserId
+    body         String
+    createdAt    UTCTime
     deriving Show Generic
 
 Vote
@@ -85,3 +94,4 @@ instance ToJSON Politician
 instance ToJSON Mandate
 instance ToJSON Occurrence
 instance ToJSON Vote
+instance ToJSON Comment

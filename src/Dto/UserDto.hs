@@ -7,6 +7,7 @@ module Dto.UserDto
   , LoginUserDto(..)
   , UserResponseDto(..)
   , LoginResponseDto(..)
+  , SetRoleDto(..)
   ) where
 
 import Data.Aeson (FromJSON, ToJSON)
@@ -32,9 +33,15 @@ data UserResponseDto = UserResponseDto
   , userCep      :: String
   , userCity     :: String
   , userUf       :: String
+  , userRole     :: String         -- "citizen" | "admin"
   } deriving (Generic, Show, ToJSON)
 
 data LoginResponseDto = LoginResponseDto
   { token :: String
   , user  :: UserResponseDto
   } deriving (Generic, Show, ToJSON)
+
+-- | Body de PATCH /admin/users/:id/role -> { "role": "citizen" | "admin" }
+data SetRoleDto = SetRoleDto
+  { role :: String
+  } deriving (Generic, Show, FromJSON, ToJSON)

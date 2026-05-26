@@ -38,6 +38,9 @@ library
                     , UseCase.MandateCase
                     , UseCase.ScoreCase
                     , UseCase.SeedCase
+                    , UseCase.CommentCase
+                    , UseCase.AdminCase
+                    , Dto.CommentDto
                     , Presentation.Controllers
                     , Presentation.Auth
                     , Presentation.Binding

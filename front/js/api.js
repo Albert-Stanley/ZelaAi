@@ -178,6 +178,58 @@ export const Api = {
   getMandateScore(id) {
     return request("GET", `/mandates/${id}/score`);
   },
+
+  // ---------- Occurrence edit/delete ----------
+  updateOccurrence(id, patch, token) {
+    return request("PATCH", `/occurrences/${id}`, { body: patch, token });
+  },
+
+  deleteOccurrence(id, token) {
+    return request("DELETE", `/occurrences/${id}`, { token });
+  },
+
+  // ---------- Nearby ----------
+  nearbyOccurrences(lat, lng, radiusKm = 5) {
+    const q = `lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}&radiusKm=${encodeURIComponent(radiusKm)}`;
+    return request("GET", `/occurrences/nearby?${q}`);
+  },
+
+  // ---------- Comments ----------
+  listComments(occId) {
+    return request("GET", `/occurrences/${occId}/comments`);
+  },
+
+  createComment(occId, body, token) {
+    return request("POST", `/occurrences/${occId}/comments`, {
+      body: { newCommentBody: body },
+      token,
+    });
+  },
+
+  deleteComment(id, token) {
+    return request("DELETE", `/comments/${id}`, { token });
+  },
+
+  myComments(token) {
+    return request("GET", "/users/me/comments", { token });
+  },
+
+  // ---------- Admin ----------
+  adminListUsers(token) {
+    return request("GET", "/admin/users", { token });
+  },
+
+  adminSetUserRole(uid, role, token) {
+    return request("PATCH", `/admin/users/${uid}/role`, { body: { role }, token });
+  },
+
+  adminStats(token) {
+    return request("GET", "/admin/stats", { token });
+  },
+
+  adminDeleteOccurrence(id, token) {
+    return request("DELETE", `/admin/occurrences/${id}`, { token });
+  },
 };
 
 export { ApiError };
