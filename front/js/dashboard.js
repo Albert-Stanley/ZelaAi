@@ -149,10 +149,10 @@ function renderCategoryChart(occs) {
       labels: sorted.map(([k]) => k),
       datasets: [{
         data: sorted.map(([,v]) => v),
-        backgroundColor: sorted.map((_, i) => i === 0 ? p.primary : p.accent + "cc"),
-        borderRadius: 8,
+        backgroundColor: sorted.map((_, i) => i === 0 ? p.text : p.text + "55"),
+        borderRadius: 4,
         borderSkipped: false,
-        barThickness: 18,
+        barThickness: 16,
       }],
     },
     options: {
