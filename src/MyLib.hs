@@ -15,6 +15,7 @@ import Network.Wai.Middleware.Cors
 import Db (withDbPool, runMigrations)
 import Repository.Entities (migrateAll)
 import qualified UseCase.CategoryCase as CC
+import qualified UseCase.SeedCase as Seed
 import Api (app)
 
 -- | Lista de origins permitidas, lida da env var CORS_ALLOWED_ORIGINS.
@@ -62,6 +63,7 @@ startApp :: IO ()
 startApp = withDbPool $ \pool -> do
   runMigrations pool migrateAll
   CC.seedDefaultCategories pool
+  Seed.seedDemoIfEmpty pool
   rawOrigins <- lookupEnv "CORS_ALLOWED_ORIGINS"
   let allowed = case rawOrigins of
         Just s | not (null s) && s /= "*" -> parseOrigins s

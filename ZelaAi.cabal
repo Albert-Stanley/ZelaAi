@@ -37,6 +37,7 @@ library
                     , UseCase.VoteCase
                     , UseCase.MandateCase
                     , UseCase.ScoreCase
+                    , UseCase.SeedCase
                     , Presentation.Controllers
                     , Presentation.Auth
                     , Presentation.Binding
