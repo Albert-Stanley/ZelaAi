@@ -62,10 +62,17 @@ function render(o) {
        </div>`
     : "";
 
+  const photoUrl = o.occPhotoUrl || `https://picsum.photos/seed/zelaai-${o.occId}/1200/520`;
+  const createdFull = fmtDate(o.occCreatedAt);
+  const createdAgo  = timeAgoLong(o.occCreatedAt);
   contentEl.innerHTML = `
-    ${o.occPhotoUrl ? `<img class="detail-img" src="${escapeAttr(o.occPhotoUrl)}" alt="" onerror="this.style.display='none'" />` : ""}
+    <img class="detail-img" src="${escapeAttr(photoUrl)}" alt="" onerror="this.onerror=null;this.src='https://picsum.photos/seed/zelaai-${o.occId}/1200/520'" />
     <span class="badge ${o.occStatus}">${labelStatus(o.occStatus)}</span>
     <h2 style="margin-top:8px;">${escapeHtml(o.occTitle)}</h2>
+    <div class="detail-meta" title="${escapeAttr(createdFull)}">
+      <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      Publicado em <strong>${createdFull}</strong> · ${createdAgo}
+    </div>
     <p class="desc">${escapeHtml(o.occDescription)}</p>
 
     <div class="info-grid">
@@ -381,6 +388,16 @@ function toggleBtns(disabled) {
 
 function fmtDate(iso) {
   try { return new Date(iso).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" }); } catch { return iso; }
+}
+function timeAgoLong(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  const diff = (Date.now() - d.getTime()) / 1000;
+  if (diff < 60) return "agora mesmo";
+  if (diff < 3600) return `há ${Math.floor(diff/60)} min`;
+  if (diff < 86400) return `há ${Math.floor(diff/3600)} h`;
+  if (diff < 604800) return `há ${Math.floor(diff/86400)} d`;
+  return `em ${d.toLocaleDateString("pt-BR")}`;
 }
 function labelStatus(s) {
   return ({ open: "Aberto", in_progress: "Em andamento", resolved: "Resolvido" }[s] || s);

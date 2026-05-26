@@ -216,23 +216,8 @@ heatBtn.addEventListener("click", async () => {
 
 function cardWithDistance(r) {
   const o = r.nearOcc;
-  const loc = o.occCity ? `${escapeHtml(o.occCity)}${o.occUf ? "/" + escapeHtml(o.occUf) : ""}` : "—";
-  return `
-    <article class="card" data-id="${o.occId}">
-      ${o.occPhotoUrl ? `<img class="card-img" src="${escapeAttr(o.occPhotoUrl)}" alt="" loading="lazy" decoding="async" onerror="this.style.display='none'" />` : ""}
-      <div class="card-body">
-        <div class="card-loc">
-          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-          ${loc} · <b style="color:var(--accent);">${r.nearDistance.toFixed(2)} km</b>
-        </div>
-        <h3>${escapeHtml(o.occTitle)}</h3>
-        <p>${escapeHtml(o.occDescription)}</p>
-        <div class="meta">
-          <span class="badge ${o.occStatus}">${labelStatus(o.occStatus)}</span>
-          <span class="vote-pill">${o.occVoteCount}</span>
-        </div>
-      </div>
-    </article>`;
+  const extraLoc = ` · <b style="color:var(--accent);">${r.nearDistance.toFixed(2)} km</b>`;
+  return cardHtml(o, extraLoc);
 }
 
 // só carrega o mapa quando ele entra na viewport
@@ -333,14 +318,58 @@ function applyFilter() {
 
   // renderiza usando DocumentFragment pra reduzir reflows
   const tpl = document.createElement("template");
-  tpl.innerHTML = filtered.map(cardHtml).join("");
+  tpl.innerHTML = filtered.map(o => cardHtml(o)).join("");
   feedEl.replaceChildren(tpl.content);
 
   // delegação de evento pra cliques no feed (1 listener em vez de N)
   scheduleMarkerDraw(filtered);
 }
 
-feedEl.addEventListener("click", (e) => {
+feedEl.addEventListener("click", async (e) => {
+  const actionBtn = e.target.closest(".card-action");
+  if (actionBtn) {
+    const act = actionBtn.dataset.act;
+    const card = actionBtn.closest(".card");
+    const id = Number(card?.dataset.id);
+    if (act === "open" || act === "comments") return; // links nativos
+    e.stopPropagation();
+    e.preventDefault();
+    if (act === "vote") {
+      if (!isLogged) { window.location.href = "login.html"; return; }
+      const wasVoted = actionBtn.classList.contains("voted");
+      actionBtn.disabled = true;
+      try {
+        const res = wasVoted
+          ? await Api.unvote(id, Auth.token())
+          : await Api.vote(id, Auth.token());
+        actionBtn.classList.toggle("voted", !wasVoted);
+        const cnt = actionBtn.querySelector(".card-action-count");
+        if (cnt) cnt.textContent = res.voteCount;
+        const occ = allOccs.find(x => x.occId === id);
+        if (occ) { occ.occVoteCount = res.voteCount; occ.userHasVoted = !wasVoted; }
+        toast(wasVoted ? "Voto removido" : "Voto computado!", "success");
+      } catch (err) {
+        if (err.status === 401) { Auth.logout(); window.location.href = "login.html"; return; }
+        if (err.status === 409) toast("você já votou nessa", "error");
+        else if (err.status === 404) toast("você não tinha votado", "error");
+        else toast(err.message || "erro ao votar", "error");
+      } finally { actionBtn.disabled = false; }
+      return;
+    }
+    if (act === "share") {
+      const occ = allOccs.find(x => x.occId === id);
+      const url = `${window.location.origin}${window.location.pathname.replace(/[^/]*$/, "")}occurrence.html?id=${id}`;
+      if (navigator.share) {
+        navigator.share({ title: occ?.occTitle || "Ocorrência", text: occ?.occDescription || "", url }).catch(() => {});
+      } else {
+        navigator.clipboard?.writeText(url).then(
+          () => toast("Link copiado!", "success"),
+          () => toast("não foi possível copiar", "error")
+        );
+      }
+      return;
+    }
+  }
   const card = e.target.closest(".card");
   if (card && card.dataset.id) window.location.href = `occurrence.html?id=${card.dataset.id}`;
 });
@@ -426,33 +455,70 @@ if (sidebarNearbyBtn) {
   sidebarNearbyBtn.addEventListener("click", () => nearbyBtn.click());
 }
 
-function cardHtml(o) {
+function cardHtml(o, extraLoc = "") {
   const loc = o.occCity ? `${escapeHtml(o.occCity)}${o.occUf ? "/" + escapeHtml(o.occUf) : ""}` : "—";
+  const photoUrl = o.occPhotoUrl || fallbackImage(o);
+  const created = o.occCreatedAt ? fmtDateTime(o.occCreatedAt) : "";
+  const createdAgo = o.occCreatedAt ? timeAgo(o.occCreatedAt) : "";
   return `
     <article class="card" data-id="${o.occId}">
-      ${o.occPhotoUrl ? `<img class="card-img" src="${escapeAttr(o.occPhotoUrl)}" alt="" loading="lazy" decoding="async" onerror="this.style.display='none'" />` : ""}
+      <div class="card-media">
+        <img class="card-img" src="${escapeAttr(photoUrl)}" alt="" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='${escapeAttr(fallbackImage(o))}'" />
+        <span class="card-badge-status badge ${o.occStatus}">${labelStatus(o.occStatus)}</span>
+        ${createdAgo ? `<span class="card-badge-time" title="${escapeAttr(created)}">
+          <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          ${createdAgo}
+        </span>` : ""}
+      </div>
       <div class="card-body">
         <div class="card-loc">
           <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-          ${loc}
+          ${loc}${extraLoc}
         </div>
         <h3>${escapeHtml(o.occTitle)}</h3>
         <p>${escapeHtml(o.occDescription)}</p>
-        <div class="meta">
-          <span class="badge ${o.occStatus}">${labelStatus(o.occStatus)}</span>
-          <div style="display:flex;align-items:center;gap:10px;">
-            <span class="vote-pill">
-              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
-              ${o.occVoteCount}
-            </span>
-            <a href="occurrence.html?id=${o.occId}#comments" class="card-comment-link" onclick="event.stopPropagation()">
-              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-              ver comentários
-            </a>
-          </div>
+        ${created ? `<div class="card-date" title="${escapeAttr(created)}">Publicado em ${created}</div>` : ""}
+        <div class="card-actions" data-id="${o.occId}">
+          <button type="button" class="card-action ${o.userHasVoted ? "voted" : ""}" data-act="vote" aria-label="Votar">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+            <span class="card-action-count">${o.occVoteCount}</span>
+          </button>
+          <a class="card-action" href="occurrence.html?id=${o.occId}#comments" data-act="comments" aria-label="Comentários">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            <span>Comentar</span>
+          </a>
+          <button type="button" class="card-action" data-act="share" aria-label="Compartilhar">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+            <span>Compartilhar</span>
+          </button>
+          <a class="card-action card-action-open" href="occurrence.html?id=${o.occId}" data-act="open" aria-label="Abrir">
+            Abrir
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </a>
         </div>
       </div>
     </article>`;
+}
+
+// Fallback image: usa picsum.photos com seed determinístico, ou padrão por categoria.
+function fallbackImage(o) {
+  const seed = `zelaai-${o.occId || o.occTitle || "city"}`;
+  return `https://picsum.photos/seed/${encodeURIComponent(seed)}/720/360`;
+}
+
+function fmtDateTime(iso) {
+  try {
+    return new Date(iso).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
+  } catch { return ""; }
+}
+function timeAgo(iso) {
+  const d = new Date(iso);
+  const diff = (Date.now() - d.getTime()) / 1000;
+  if (diff < 60) return "agora";
+  if (diff < 3600) return `${Math.floor(diff/60)} min`;
+  if (diff < 86400) return `${Math.floor(diff/3600)} h`;
+  if (diff < 604800) return `${Math.floor(diff/86400)} d`;
+  return d.toLocaleDateString("pt-BR");
 }
 function labelStatus(s) {
   return ({ open: "Aberto", in_progress: "Em andamento", resolved: "Resolvido" }[s] || s);

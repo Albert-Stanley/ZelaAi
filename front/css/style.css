@@ -846,13 +846,27 @@ h1, h2, h3, h4 {
 
 .detail-img {
   width: 100%;
-  height: 260px;
+  height: 340px;
   object-fit: cover;
   border-radius: var(--radius-lg);
   margin-bottom: 16px;
   background: var(--bg-deep);
   border: 1px solid var(--border);
+  box-shadow: var(--shadow-md, 0 6px 24px rgba(0,0,0,0.08));
 }
+.detail-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  background: var(--bg-deep);
+  padding: 5px 10px;
+  border-radius: 999px;
+  margin: 0 0 12px;
+  border: 1px solid var(--border);
+}
+.detail-meta strong { color: var(--text); font-weight: 700; }
 .detail h2 {
   margin: 0 0 8px;
   font-size: 1.5rem;
@@ -1290,8 +1304,8 @@ h1, h2, h3, h4 {
 
 .map-nearby {
   position: absolute;
-  top: 8px;
-  left: 8px;
+  top: 48px;
+  right: 8px;
   z-index: 410;
   background: var(--surface);
   border: 1px solid var(--border);
@@ -1318,8 +1332,8 @@ h1, h2, h3, h4 {
 
 .map-heat {
   position: absolute;
-  top: 44px;
-  left: 8px;
+  top: 84px;
+  right: 8px;
   z-index: 410;
   background: var(--surface);
   border: 1px solid var(--border);
@@ -2254,3 +2268,156 @@ kbd {
   user-select: none;
 }
 .kbd-hint:hover { color: var(--text); }
+
+/* =============================== Card v2 (social-style) ==================== */
+
+.card .card-media {
+  position: relative;
+  width: 100%;
+  background: var(--bg-deep);
+  overflow: hidden;
+}
+.card .card-media .card-img {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.4s ease;
+}
+.card:hover .card-media .card-img { transform: scale(1.03); }
+
+.card-badge-status {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 2;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+  backdrop-filter: blur(4px);
+}
+.card-badge-time {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: white;
+  background: rgba(0,0,0,0.55);
+  padding: 4px 8px;
+  border-radius: 999px;
+  backdrop-filter: blur(4px);
+}
+
+.card-date {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin: 4px 0 0;
+  font-weight: 500;
+}
+
+/* Override feed-card actions row (mantém compat com my.js que usa .card-actions .btn) */
+.card .card-actions {
+  display: flex;
+  gap: 4px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  align-items: center;
+}
+.card .card-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: transparent;
+  border: none;
+  padding: 7px 10px;
+  border-radius: 8px;
+  color: var(--text-soft);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background var(--t-fast), color var(--t-fast);
+  flex: 0 0 auto;
+}
+.card .card-action:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+.card .card-action.voted {
+  color: var(--primary);
+  background: var(--primary-soft);
+}
+.card .card-action.voted svg { color: var(--primary); }
+.card .card-action-count {
+  font-variant-numeric: tabular-nums;
+}
+.card .card-action-open {
+  margin-left: auto;
+  color: var(--primary);
+}
+.card .card-action-open:hover { color: var(--primary-dark); }
+
+/* =============================== Global footer ============================= */
+
+.site-footer {
+  margin-top: 48px;
+  padding: 28px 20px 32px;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+.site-footer-inner {
+  max-width: 1240px;
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px 32px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+.site-footer-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  color: var(--text);
+}
+.site-footer-brand .brand-mark {
+  display: inline-flex;
+  width: 26px; height: 26px;
+  background: var(--primary);
+  color: white;
+  border-radius: 7px;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 0.85rem;
+}
+.site-footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+}
+.site-footer-links a {
+  color: var(--text-soft);
+  text-decoration: none;
+  font-weight: 500;
+}
+.site-footer-links a:hover { color: var(--primary); }
+.site-footer-tag {
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  width: 100%;
+  text-align: center;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--border);
+}
+@media (max-width: 600px) {
+  .site-footer-inner { justify-content: center; text-align: center; flex-direction: column; align-items: center; }
+}
