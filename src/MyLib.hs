@@ -16,6 +16,8 @@ import Db (withDbPool, runMigrations)
 import Repository.Entities (migrateAll)
 import qualified UseCase.CategoryCase as CC
 import qualified UseCase.SeedCase as Seed
+import qualified InterfaceAdapters.Libs as Libs
+import qualified Presentation.RateLimit as RL
 import Api (app)
 
 -- | Lista de origins permitidas, lida da env var CORS_ALLOWED_ORIGINS.
@@ -61,6 +63,9 @@ buildPolicy allowed req
 
 startApp :: IO ()
 startApp = withDbPool $ \pool -> do
+  -- Sanity check de segredos antes de qualquer coisa.
+  Libs.assertJwtSecretSafe
+  prod <- Libs.isProduction
   runMigrations pool migrateAll
   CC.seedDefaultCategories pool
   Seed.seedDemoIfEmpty pool
@@ -68,16 +73,29 @@ startApp = withDbPool $ \pool -> do
   let allowed = case rawOrigins of
         Just s | not (null s) && s /= "*" -> parseOrigins s
         _ -> []
-  case allowed of
-    [] -> putStrLn "CORS: open (no origin restriction)"
-    xs -> putStrLn $ "CORS: restricted to " ++ show (map BS.unpack xs)
+  -- Em produção, CORS aberto é vulnerabilidade: aborta o boot.
+  case (prod, allowed) of
+    (True, []) ->
+      fail "FATAL: production requires CORS_ALLOWED_ORIGINS to be set (no wildcard)."
+    (_, []) ->
+      putStrLn "CORS: open (no origin restriction) — dev only."
+    (_, xs) ->
+      putStrLn $ "CORS: restricted to " ++ show (map BS.unpack xs)
+  -- Rate limiter: aplicado em endpoints sensíveis (auth + write).
+  rlMw <- RL.rateLimit
+    [ RL.RateRule "/users/login"    "POST" 5  60   -- 5 / 1min (brute-force)
+    , RL.RateRule "/users/register" "POST" 5  300  -- 5 / 5min (spam de conta)
+    , RL.RateRule "/occurrences"    "POST" 20 60   -- criação
+    , RL.RateRule "/comments"       "POST" 30 60   -- comentários
+    ]
+  putStrLn "RateLimit: login=5/min, register=5/5min, write endpoints throttled."
   -- Render injeta PORT; localmente o default e 5050
   rawPort <- lookupEnv "PORT"
   let port = case rawPort >>= readMaybeInt of
         Just p  -> p
         Nothing -> 5050
   putStrLn $ "server listening on :" ++ show port
-  run port (cors (buildPolicy allowed) (app pool))
+  run port (rlMw (cors (buildPolicy allowed) (app pool)))
 
 readMaybeInt :: String -> Maybe Int
 readMaybeInt s = case reads s of

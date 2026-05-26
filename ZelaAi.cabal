@@ -46,6 +46,7 @@ library
                     , Presentation.Binding
                     , Presentation.Responses
                     , Presentation.Errors
+                    , Presentation.RateLimit
                     , InterfaceAdapters.Libs
                     , InterfaceAdapters.Apis
                     , InterfaceAdapters.Logs

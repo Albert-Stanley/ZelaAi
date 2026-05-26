@@ -82,7 +82,12 @@ function render(o) {
       </div>
       <div class="item">
         <span class="label">CEP</span>
-        <span class="value">${escapeHtml(o.occCep || "—")}</span>
+        <span class="value">
+          ${escapeHtml(o.occCep || "—")}
+          ${o.occCep ? `<button type="button" class="copy-cep-btn" data-cep="${escapeAttr(o.occCep)}" aria-label="Copiar CEP" title="Copiar CEP">
+            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          </button>` : ""}
+        </span>
       </div>
       <div class="item">
         <span class="label">Categoria</span>
@@ -169,6 +174,11 @@ function render(o) {
   });
   document.getElementById("btn-copy-link").addEventListener("click", () => {
     copyToClipboard(window.location.href.split("#")[0]);
+  });
+
+  // Copiar CEP
+  contentEl.querySelectorAll(".copy-cep-btn").forEach(b => {
+    b.addEventListener("click", () => copyToClipboard(b.dataset.cep));
   });
 
   loadComments();

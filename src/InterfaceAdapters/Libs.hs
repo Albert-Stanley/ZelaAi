@@ -8,6 +8,8 @@ module InterfaceAdapters.Libs
   , validateTokenJwt
   , generateUuid
   , jwtSecret
+  , assertJwtSecretSafe
+  , isProduction
   ) where
 
 import qualified Data.ByteString.Char8 as BS
@@ -22,10 +24,43 @@ import System.Environment (lookupEnv)
 import System.IO.Unsafe (unsafePerformIO)
 import Data.Maybe (fromMaybe)
 
+-- | Valor sentinela do default. Mantido como constante para checagem no boot.
+defaultDevSecret :: String
+defaultDevSecret = "zelaai_dev_secret"
+
 -- | Le do ambiente uma unica vez (estilo helper global do Go).
 jwtSecret :: String
-jwtSecret = unsafePerformIO $ fmap (fromMaybe "zelaai_dev_secret") (lookupEnv "JWT_SECRET")
+jwtSecret = unsafePerformIO $ fmap (fromMaybe defaultDevSecret) (lookupEnv "JWT_SECRET")
 {-# NOINLINE jwtSecret #-}
+
+-- | Detecta se estamos em produção via APP_ENV / ENV / RENDER (Render seta RENDER=true).
+isProduction :: IO Bool
+isProduction = do
+  e1 <- lookupEnv "APP_ENV"
+  e2 <- lookupEnv "ENV"
+  e3 <- lookupEnv "RENDER"
+  let pick = fromMaybe "" (case e1 of { Just x -> Just x; _ -> e2 })
+      lowered = map (\c -> if c >= 'A' && c <= 'Z' then toEnum (fromEnum c + 32) else c) pick
+  return $ lowered `elem` ["production", "prod"] || e3 == Just "true"
+
+-- | Sanidade do JWT_SECRET. Em produção, rejeita default ou segredos curtos.
+-- Em dev, apenas loga aviso.
+assertJwtSecretSafe :: IO ()
+assertJwtSecretSafe = do
+  prod <- isProduction
+  let s = jwtSecret
+      tooShort = length s < 32
+      isDefault = s == defaultDevSecret
+  case (prod, isDefault, tooShort) of
+    (True,  True, _) ->
+      fail "FATAL: JWT_SECRET not set in production (using default). Refusing to start."
+    (True,  _,    True) ->
+      fail "FATAL: JWT_SECRET is too short (< 32 chars) in production. Refusing to start."
+    (False, True, _) ->
+      putStrLn "WARN: using default JWT_SECRET. OK in dev, NEVER in production."
+    (False, _,    True) ->
+      putStrLn "WARN: JWT_SECRET is shorter than 32 chars. Increase it before production."
+    _ -> return ()
 
 -- Senhas -------------------------------------------------------------
 

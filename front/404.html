@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ZelaAi — Página não encontrada</title>
+  <meta name="description" content="Página não encontrada no ZelaAi." />
+  <meta name="robots" content="noindex" />
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+  <link rel="stylesheet" href="css/style.css" />
+  <script>
+    (function () {
+      try {
+        var t = localStorage.getItem("zelaai.theme")
+             || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+        document.documentElement.setAttribute("data-theme", t);
+      } catch (_) {}
+    })();
+  </script>
+</head>
+<body>
+  <header class="header">
+    <div class="header-inner">
+      <a class="brand" href="index.html">
+        <span class="brand-mark">Z</span>
+        <span>ZelaAi</span>
+      </a>
+      <nav class="nav-links">
+        <a href="index.html">Feed</a>
+        <a href="dashboard.html">Dashboard</a>
+        <a href="mandates.html">Termômetro</a>
+      </nav>
+    </div>
+  </header>
+  <main class="app">
+    <div class="content" style="text-align:center; padding:60px 20px;">
+      <div style="font-size: 6rem; font-weight: 800; color: var(--primary); line-height: 1;">404</div>
+      <h2 style="margin: 12px 0 8px;">Essa rua não existe no mapa</h2>
+      <p style="color: var(--text-soft); max-width: 480px; margin: 0 auto 24px;">
+        A página que você tentou abrir foi removida ou nunca existiu. Volte para o feed e veja o que está rolando na sua cidade.
+      </p>
+      <a class="btn" href="index.html" style="display:inline-flex;">← Voltar para o feed</a>
+    </div>
+  </main>
+  <script src="js/footer.js" defer></script>
+</body>
+</html>

@@ -867,6 +867,26 @@ h1, h2, h3, h4 {
   border: 1px solid var(--border);
 }
 .detail-meta strong { color: var(--text); font-weight: 700; }
+
+.copy-cep-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 6px;
+  padding: 2px 5px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--text-muted);
+  cursor: pointer;
+  vertical-align: middle;
+  transition: all var(--t-fast);
+}
+.copy-cep-btn:hover {
+  background: var(--primary-soft);
+  color: var(--primary);
+  border-color: var(--primary);
+}
 .detail h2 {
   margin: 0 0 8px;
   font-size: 1.5rem;
@@ -2420,4 +2440,15 @@ kbd {
 }
 @media (max-width: 600px) {
   .site-footer-inner { justify-content: center; text-align: center; flex-direction: column; align-items: center; }
+}
+
+/* =============================== Reduced motion =========================== */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .card:hover .card-media .card-img { transform: none; }
 }
