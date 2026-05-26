@@ -1,6 +1,7 @@
 import { Api } from "./api.js";
 import { Auth, toast } from "./auth.js";
 import { Theme } from "./theme.js";
+import { mountKeyboardShortcuts } from "./keys.js";
 
 Theme.mountToggle(document.querySelector(".header-actions"));
 
@@ -102,8 +103,23 @@ function render(o) {
       ${statusBtns}
     </div>
 
+    <div class="share-bar">
+      <button class="btn small ghost" id="btn-share">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+        Compartilhar
+      </button>
+      <button class="btn small ghost" id="btn-copy-link">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+        Copiar link
+      </button>
+      <a class="btn small ghost" href="#comments">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        Comentários
+      </a>
+    </div>
+
     <!-- ====== Comentários ====== -->
-    <section class="comments-section">
+    <section class="comments-section" id="comments">
       <div class="comments-header">
         <h3>Comentários</h3>
         <span class="count" id="cm-count">—</span>
@@ -134,7 +150,38 @@ function render(o) {
     });
     document.getElementById("cm-form").addEventListener("submit", onCommentSubmit);
   }
+
+  // Share / copy link
+  document.getElementById("btn-share").addEventListener("click", () => {
+    const url = window.location.href.split("#")[0];
+    if (navigator.share) {
+      navigator.share({ title: o.occTitle, text: o.occDescription, url }).catch(() => {});
+    } else {
+      copyToClipboard(url);
+    }
+  });
+  document.getElementById("btn-copy-link").addEventListener("click", () => {
+    copyToClipboard(window.location.href.split("#")[0]);
+  });
+
   loadComments();
+}
+
+function copyToClipboard(text) {
+  navigator.clipboard.writeText(text).then(
+    () => toast("Link copiado!", "success"),
+    () => {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      ta.remove();
+      toast("Link copiado!", "success");
+    }
+  );
 }
 
 // ---------- Comments ---------------------------------------------------------
@@ -346,3 +393,7 @@ function escapeHtml(s) {
 function escapeAttr(s) { return escapeHtml(s); }
 
 load();
+
+mountKeyboardShortcuts({
+  onEsc: () => {},
+});

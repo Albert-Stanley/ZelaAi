@@ -1316,6 +1316,33 @@ h1, h2, h3, h4 {
 [data-theme="dark"] .map-nearby.active { color: #0a0a0a; }
 .map-nearby.loading svg { animation: spin 0.8s linear infinite; }
 
+.map-heat {
+  position: absolute;
+  top: 44px;
+  left: 8px;
+  z-index: 410;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-soft);
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  box-shadow: var(--shadow-xs);
+  transition: all var(--t-fast);
+}
+.map-heat:hover { background: var(--bg-deep); color: var(--text); }
+.map-heat.active {
+  background: #dc2626;
+  color: white;
+  border-color: #dc2626;
+}
+.map-heat.loading svg { animation: spin 0.8s linear infinite; }
+
 /* =============================== Comments thread =========================== */
 
 .comments-section {
@@ -2119,3 +2146,111 @@ h1, h2, h3, h4 {
   justify-content: center;
   gap: 6px;
 }
+
+/* =============================== Share bar ================================= */
+
+.share-bar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 10px 0;
+  border-top: 1px dashed var(--border);
+  border-bottom: 1px dashed var(--border);
+  margin: 16px 0;
+}
+.share-bar .btn.ghost {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  gap: 5px;
+  padding: 5px 10px;
+}
+.share-bar .btn.ghost:hover { color: var(--text); background: var(--hover); }
+.share-bar a.btn { text-decoration: none; }
+
+/* =============================== Card comment link ========================= */
+
+.card-comment-link {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  transition: color var(--t-fast);
+}
+.card-comment-link:hover { color: var(--primary); }
+
+/* =============================== Keyboard shortcuts help ================== */
+
+.kbd-help-bg {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  z-index: 9000;
+  align-items: center;
+  justify-content: center;
+}
+.kbd-help-bg.open { display: flex; }
+.kbd-help {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 24px 28px;
+  min-width: 280px;
+  box-shadow: var(--shadow-lg);
+}
+.kbd-help-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+.kbd-help-head h3 { font-size: 1rem; font-weight: 700; margin: 0; }
+.kbd-help-close {
+  background: none;
+  border: none;
+  font-size: 1.4rem;
+  cursor: pointer;
+  color: var(--text-muted);
+  line-height: 1;
+  padding: 0 4px;
+}
+.kbd-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.kbd-list li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.88rem;
+  color: var(--text-soft);
+}
+kbd {
+  background: var(--hover);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 2px 8px;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.8rem;
+  color: var(--text);
+  min-width: 28px;
+  text-align: center;
+  box-shadow: 0 1px 0 var(--border);
+}
+
+/* =============================== Keyboard shortcut hint in header ========= */
+
+.kbd-hint {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-left: 4px;
+  cursor: pointer;
+  user-select: none;
+}
+.kbd-hint:hover { color: var(--text); }

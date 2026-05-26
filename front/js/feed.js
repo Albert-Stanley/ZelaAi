@@ -3,6 +3,7 @@ import { Auth, toast } from "./auth.js";
 import { Theme } from "./theme.js";
 import { attachCepLookup } from "./cep.js";
 import { attachUploader, cloudinaryConfigured } from "./upload.js";
+import { mountKeyboardShortcuts } from "./keys.js";
 
 // Feed é PÚBLICO — não exige login. Só esconde o FAB se não tiver sessão.
 const isLogged = Auth.isLogged();
@@ -156,6 +157,61 @@ nearbyBtn.addEventListener("click", async () => {
     nearbyBtn.classList.remove("loading");
     toast("permissão de localização negada", "error");
   }, { timeout: 6000 });
+});
+
+// ----------- Heatmap toggle ------------------------------------------------
+
+const heatBtn = document.createElement("button");
+heatBtn.type = "button";
+heatBtn.className = "map-heat";
+heatBtn.title = "Alternar heatmap";
+heatBtn.innerHTML = `
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>
+  Heatmap
+`;
+mapWrap.appendChild(heatBtn);
+
+let heatLayer = null;
+let heatMode = false;
+let leafletHeatLoaded = false;
+
+function loadLeafletHeat() {
+  return new Promise((resolve, reject) => {
+    if (leafletHeatLoaded) { resolve(); return; }
+    const s = document.createElement("script");
+    s.src = "https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js";
+    s.onload = () => { leafletHeatLoaded = true; resolve(); };
+    s.onerror = reject;
+    document.head.appendChild(s);
+  });
+}
+
+heatBtn.addEventListener("click", async () => {
+  if (!map) { toast("aguarde o mapa carregar", "error"); return; }
+  if (!heatMode) {
+    heatBtn.classList.add("loading");
+    try {
+      await loadLeafletHeat();
+      const points = (nearbyMode ? [] : allOccs)
+        .filter(o => o.occLatitude != null && o.occLongitude != null)
+        .map(o => [o.occLatitude, o.occLongitude, Math.min(1, 0.2 + o.occVoteCount * 0.05)]);
+      if (points.length === 0) { toast("sem coordenadas para o heatmap", "error"); return; }
+      if (heatLayer) map.removeLayer(heatLayer);
+      heatLayer = L.heatLayer(points, { radius: 28, blur: 20, maxZoom: 17 }).addTo(map);
+      markerLayer.remove();
+      heatMode = true;
+      heatBtn.classList.add("active");
+    } catch {
+      toast("erro ao carregar plugin de heatmap", "error");
+    } finally {
+      heatBtn.classList.remove("loading");
+    }
+  } else {
+    if (heatLayer) { map.removeLayer(heatLayer); heatLayer = null; }
+    markerLayer.addTo(map);
+    heatMode = false;
+    heatBtn.classList.remove("active");
+  }
 });
 
 function cardWithDistance(r) {
@@ -384,10 +440,16 @@ function cardHtml(o) {
         <p>${escapeHtml(o.occDescription)}</p>
         <div class="meta">
           <span class="badge ${o.occStatus}">${labelStatus(o.occStatus)}</span>
-          <span class="vote-pill">
-            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
-            ${o.occVoteCount}
-          </span>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span class="vote-pill">
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+              ${o.occVoteCount}
+            </span>
+            <a href="occurrence.html?id=${o.occId}#comments" class="card-comment-link" onclick="event.stopPropagation()">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              ver comentários
+            </a>
+          </div>
         </div>
       </div>
     </article>`;
@@ -495,3 +557,19 @@ function escapeHtml(s) {
 function escapeAttr(s) { return escapeHtml(s); }
 
 loadFeed();
+
+// Atalhos de teclado
+mountKeyboardShortcuts({
+  onNew: () => {
+    if (!isLogged) { window.location.href = "login.html"; return; }
+    document.getElementById("modal-bg")?.classList.add("open");
+  },
+  onSearch: () => {
+    const s = document.getElementById("search");
+    s?.focus();
+    s?.select();
+  },
+  onEsc: () => {
+    document.getElementById("modal-bg")?.classList.remove("open");
+  },
+});
