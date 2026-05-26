@@ -50,19 +50,85 @@
     </div>
   </header>
 
-  <main class="app">
-    <div class="content">
-      <span class="eyebrow">Plataforma cívica · Avaliação pública</span>
-      <h2 class="page-title">Termômetro de Gestões</h2>
-      <p class="page-sub">
-        Cruzamento entre ocorrências reportadas pela população e os mandatos vigentes.
-        Quanto mais verde, mais a gestão resolveu.
-      </p>
+  <main class="app wide">
+    <div class="app-grid mandates-grid">
 
-      <div id="list">
-        <div class="skeleton skeleton-card"></div>
-        <div class="skeleton skeleton-card"></div>
+      <!-- Sidebar esquerda: busca + filtros -->
+      <aside class="sidebar sidebar-left">
+        <div class="sidebar-panel">
+          <h4 class="sidebar-title">Buscar gestão</h4>
+          <div class="mandate-search">
+            <input id="mandate-search" type="search" placeholder="Prefeito, partido, cidade…" autocomplete="off" />
+          </div>
+
+          <h4 class="sidebar-title" style="margin-top:18px;">Cargo</h4>
+          <div class="filter-chips vertical" id="role-filter">
+            <button type="button" data-role="all" class="active">Todos</button>
+            <button type="button" data-role="Prefeito">Prefeito(a)</button>
+            <button type="button" data-role="Vereador">Vereador(a)</button>
+            <button type="button" data-role="Governador">Governador(a)</button>
+          </div>
+
+          <h4 class="sidebar-title" style="margin-top:18px;">Período</h4>
+          <div class="filter-chips vertical" id="period-filter">
+            <button type="button" data-period="all" class="active">Todos</button>
+            <button type="button" data-period="active">Vigentes</button>
+            <button type="button" data-period="past">Encerrados</button>
+          </div>
+        </div>
+
+        <div class="sidebar-panel" style="margin-top:14px;">
+          <h4 class="sidebar-title">Como funciona</h4>
+          <ul class="sidebar-tips">
+            <li>Cada mandato é avaliado pelo % de ocorrências <strong>resolvidas</strong> na cidade.</li>
+            <li>Quanto mais verde a barra, melhor a gestão.</li>
+            <li>Votos somam <strong>pressão pública</strong> sobre o gestor.</li>
+          </ul>
+        </div>
+      </aside>
+
+      <!-- Conteúdo principal -->
+      <div class="main-col">
+        <span class="eyebrow">Plataforma cívica · Avaliação pública</span>
+        <h2 class="page-title">Termômetro de Gestões</h2>
+        <p class="page-sub">
+          Cruzamento entre ocorrências reportadas pela população e os mandatos vigentes.
+          Quanto mais verde, mais a gestão resolveu.
+        </p>
+
+        <!-- Busca mobile (escondido em desktop) -->
+        <div class="mandate-search-mobile search-bar">
+          <input id="mandate-search-mobile" type="search" placeholder="Buscar prefeito, partido, cidade…" autocomplete="off" />
+        </div>
+
+        <div class="mandate-results-header">
+          <span class="count" id="mandate-count">—</span>
+          <span class="mandate-sort-hint">ordenados por score</span>
+        </div>
+
+        <div id="list">
+          <div class="skeleton skeleton-card"></div>
+          <div class="skeleton skeleton-card"></div>
+        </div>
+
+        <div id="list-empty" class="empty" style="display:none;">
+          Nenhuma gestão encontrada para essa busca.
+        </div>
       </div>
+
+      <!-- Sidebar direita: ranking + estatísticas -->
+      <aside class="sidebar sidebar-right">
+        <div class="sidebar-panel" id="mandate-ranking">
+          <h4 class="sidebar-title">Ranking</h4>
+          <div class="sidebar-loading">carregando…</div>
+        </div>
+
+        <div class="sidebar-panel" style="margin-top:14px;" id="mandate-global-stats">
+          <h4 class="sidebar-title">Estatísticas globais</h4>
+          <div class="sidebar-loading">carregando…</div>
+        </div>
+      </aside>
+
     </div>
   </main>
 

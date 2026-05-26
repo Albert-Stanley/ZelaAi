@@ -156,6 +156,11 @@ type API =
         :> Capture "id" Int64
         :> Header "Authorization" T.Text
         :> Delete '[JSON] NoContent
+  :<|> "comments"
+        :> Capture "id" Int64
+        :> Header "Authorization" T.Text
+        :> ReqBody '[JSON] Cm.UpdateCommentDto
+        :> Patch '[JSON] Cm.CommentResponseDto
   :<|> "users" :> "me" :> "comments"
         :> Header "Authorization" T.Text
         :> Get '[JSON] [Cm.CommentResponseDto]
@@ -203,6 +208,7 @@ server pool =
   :<|> (\oid auth dto -> Ctrl.createCommentController pool auth oid dto)
   :<|> Ctrl.listCommentsController pool
   :<|> (\cid auth     -> Ctrl.deleteCommentController pool auth cid)
+  :<|> (\cid auth dto -> Ctrl.editCommentController pool auth cid dto)
   :<|> Ctrl.listMyCommentsController pool
   :<|> Ctrl.adminListUsersController pool
   :<|> (\uid auth dto -> Ctrl.adminSetUserRoleController pool auth uid dto)

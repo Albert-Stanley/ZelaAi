@@ -243,6 +243,8 @@ async function loadFeed() {
   try {
     allOccs = await Api.listOccurrences();
     applyFilter();
+    renderSidebarTrending(allOccs);
+    renderSidebarStats(allOccs);
   } catch (e) {
     feedEl.innerHTML = `<div class="empty">erro ao carregar: ${escapeHtml(e.message)}</div>`;
   }
@@ -293,15 +295,79 @@ searchInput.addEventListener("input", () => {
   searchTimer = setTimeout(applyFilter, 180);
 });
 
-// chips de filtro de status
+// chips de filtro de status (mobile, inline)
 if (chipsEl) {
   chipsEl.addEventListener("click", (e) => {
     const btn = e.target.closest("button[data-status]");
     if (!btn) return;
-    activeStatus = btn.dataset.status;
-    chipsEl.querySelectorAll("button").forEach(b => b.classList.toggle("active", b === btn));
-    applyFilter();
+    setActiveStatus(btn.dataset.status);
   });
+}
+
+// chips de filtro de status (desktop sidebar)
+const sidebarChipsEl = document.getElementById("status-chips-sidebar");
+if (sidebarChipsEl) {
+  sidebarChipsEl.addEventListener("click", (e) => {
+    const btn = e.target.closest("button[data-status]");
+    if (!btn) return;
+    setActiveStatus(btn.dataset.status);
+  });
+}
+
+function setActiveStatus(status) {
+  activeStatus = status;
+  [chipsEl, sidebarChipsEl].forEach(el => {
+    if (!el) return;
+    el.querySelectorAll("button[data-status]").forEach(b => {
+      b.classList.toggle("active", b.dataset.status === status);
+    });
+  });
+  applyFilter();
+}
+
+// Sidebar trending: top 5 por voto
+function renderSidebarTrending(occs) {
+  const el = document.getElementById("sidebar-trending");
+  if (!el) return;
+  const top = [...occs].sort((a, b) => b.occVoteCount - a.occVoteCount).slice(0, 5);
+  if (top.length === 0) {
+    el.innerHTML = `<h4 class="sidebar-title">Em alta</h4><div class="sidebar-loading">sem dados</div>`;
+    return;
+  }
+  el.innerHTML = `
+    <h4 class="sidebar-title">Em alta</h4>
+    ${top.map((o, i) => `
+      <div class="sidebar-trending-item" onclick="location.href='occurrence.html?id=${o.occId}'">
+        <span class="sidebar-trending-rank">${i + 1}</span>
+        <div class="sidebar-trending-info">
+          <div class="sidebar-trending-title">${escapeHtml(o.occTitle)}</div>
+          <div class="sidebar-trending-meta">
+            <span class="badge ${o.occStatus}" style="font-size:0.6rem;padding:1px 5px;">${labelStatus(o.occStatus)}</span>
+            <span>${o.occVoteCount} voto${o.occVoteCount !== 1 ? "s" : ""}</span>
+          </div>
+        </div>
+      </div>`
+    ).join("")}
+  `;
+}
+
+// Sidebar stats
+function renderSidebarStats(occs) {
+  const total = occs.length;
+  const open  = occs.filter(o => o.occStatus === "open").length;
+  const prog  = occs.filter(o => o.occStatus === "in_progress").length;
+  const res   = occs.filter(o => o.occStatus === "resolved").length;
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  set("ss-total", total);
+  set("ss-open",  open);
+  set("ss-prog",  prog);
+  set("ss-res",   res);
+}
+
+// Botão "Perto de mim" da sidebar direita (delega para o nearbyBtn do mapa)
+const sidebarNearbyBtn = document.getElementById("sidebar-nearby-btn");
+if (sidebarNearbyBtn) {
+  sidebarNearbyBtn.addEventListener("click", () => nearbyBtn.click());
 }
 
 function cardHtml(o) {

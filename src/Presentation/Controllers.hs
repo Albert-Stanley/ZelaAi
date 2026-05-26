@@ -24,6 +24,7 @@ module Presentation.Controllers
   , nearbyOccurrencesController
   , createCommentController
   , listCommentsController
+  , editCommentController
   , deleteCommentController
   , listMyCommentsController
   , adminListUsersController
@@ -299,6 +300,22 @@ createCommentController pool h oid dto = do
 listCommentsController :: ConnectionPool -> Int64 -> Handler [Cm.CommentResponseDto]
 listCommentsController pool oid =
   liftIO $ CmC.listCommentsByOccurrence pool (fromIntegral oid)
+
+-- PATCH /comments/:id  (JWT, apenas autor)
+editCommentController
+  :: ConnectionPool
+  -> Maybe T.Text
+  -> Int64
+  -> Cm.UpdateCommentDto
+  -> Handler Cm.CommentResponseDto
+editCommentController pool h cid dto = do
+  uid <- Auth.extractUserId h
+  result <- liftIO $ CmC.editComment pool uid (fromIntegral cid) (Cm.updCommentBody dto)
+  case result of
+    Left "comment not found" -> throwError (Err.notFound "comment not found")
+    Left "forbidden"         -> throwError (Err.forbidden "not your comment")
+    Left err                 -> throwError (Err.badRequest err)
+    Right ok                 -> return ok
 
 -- DELETE /comments/:id  (JWT, autor ou admin)
 deleteCommentController

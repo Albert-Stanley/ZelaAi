@@ -162,22 +162,42 @@ function renderComments(list) {
   el.querySelectorAll("[data-act='del']").forEach(btn => {
     btn.addEventListener("click", () => deleteComment(Number(btn.dataset.id)));
   });
+  el.querySelectorAll("[data-act='edit']").forEach(btn => {
+    btn.addEventListener("click", () => openEditComment(Number(btn.dataset.id)));
+  });
+  el.querySelectorAll("[data-act='cancel-edit']").forEach(btn => {
+    btn.addEventListener("click", () => closeEditComment(Number(btn.dataset.id)));
+  });
+  el.querySelectorAll("[data-act='save-edit']").forEach(btn => {
+    btn.addEventListener("click", () => saveEditComment(Number(btn.dataset.id)));
+  });
 }
 
 function commentHtml(c) {
   const mine    = isLogged && c.commentUserId === user.userId;
   const isAdmin = isLogged && user.userRole === "admin";
   const showDel = mine || isAdmin;
+  const showEdit = mine; // só o autor pode editar
   return `
-    <article class="comment">
+    <article class="comment" data-cid="${c.commentId}">
       <div class="comment-avatar">${escapeHtml(c.commentUsername[0] || "?").toUpperCase()}</div>
       <div class="comment-main">
         <div class="comment-head">
           <strong>@${escapeHtml(c.commentUsername)}</strong>
           <span class="comment-time">${timeAgo(c.commentCreatedAt)}</span>
-          ${showDel ? `<button type="button" class="comment-del" data-act="del" data-id="${c.commentId}" aria-label="Apagar">×</button>` : ""}
+          <span class="comment-actions">
+            ${showEdit ? `<button type="button" class="comment-action-btn" data-act="edit" data-id="${c.commentId}" aria-label="Editar">Editar</button>` : ""}
+            ${showDel  ? `<button type="button" class="comment-action-btn danger" data-act="del" data-id="${c.commentId}" aria-label="Apagar">×</button>` : ""}
+          </span>
         </div>
-        <div class="comment-body">${escapeHtml(c.commentBody)}</div>
+        <div class="comment-body" id="cm-body-${c.commentId}">${escapeHtml(c.commentBody)}</div>
+        <div class="comment-edit-area" id="cm-edit-${c.commentId}" style="display:none;">
+          <textarea class="comment-edit-textarea" maxlength="1000">${escapeHtml(c.commentBody)}</textarea>
+          <div class="comment-edit-actions">
+            <button type="button" class="btn small secondary" data-act="cancel-edit" data-id="${c.commentId}">Cancelar</button>
+            <button type="button" class="btn small" data-act="save-edit" data-id="${c.commentId}">Salvar</button>
+          </div>
+        </div>
       </div>
     </article>`;
 }
@@ -200,6 +220,44 @@ async function onCommentSubmit(e) {
   } finally {
     btn.disabled = false;
     btn.textContent = "Publicar";
+  }
+}
+
+function openEditComment(cid) {
+  const bodyEl = document.getElementById(`cm-body-${cid}`);
+  const editEl = document.getElementById(`cm-edit-${cid}`);
+  if (!bodyEl || !editEl) return;
+  bodyEl.style.display = "none";
+  editEl.style.display = "";
+  editEl.querySelector("textarea").focus();
+}
+
+function closeEditComment(cid) {
+  const bodyEl = document.getElementById(`cm-body-${cid}`);
+  const editEl = document.getElementById(`cm-edit-${cid}`);
+  if (!bodyEl || !editEl) return;
+  bodyEl.style.display = "";
+  editEl.style.display = "none";
+}
+
+async function saveEditComment(cid) {
+  const editEl = document.getElementById(`cm-edit-${cid}`);
+  if (!editEl) return;
+  const textarea = editEl.querySelector("textarea");
+  const body = textarea.value.trim();
+  if (!body) return;
+  const saveBtn = editEl.querySelector("[data-act='save-edit']");
+  saveBtn.disabled = true;
+  saveBtn.textContent = "…";
+  try {
+    await Api.editComment(cid, body, Auth.token());
+    await loadComments();
+    toast("comentário editado");
+  } catch (err) {
+    if (err.status === 401) { Auth.logout(); window.location.replace("login.html"); return; }
+    toast(err.message || "erro ao editar comentário", "error");
+    saveBtn.disabled = false;
+    saveBtn.textContent = "Salvar";
   }
 }
 

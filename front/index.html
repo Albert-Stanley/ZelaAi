@@ -57,37 +57,101 @@
     </div>
   </header>
 
-  <main class="app">
-    <div class="content">
+  <main class="app wide">
+    <div class="app-grid feed-grid">
 
-      <span class="eyebrow">Plataforma cívica · Feed público</span>
-      <h2 class="page-title">Ocorrências da sua cidade</h2>
-      <p class="page-sub">Veja, vote e reporte problemas urbanos. Tudo aberto, sem login para ler.</p>
+      <!-- Sidebar esquerda: filtros + stats -->
+      <aside class="sidebar sidebar-left">
+        <div class="sidebar-panel">
+          <h4 class="sidebar-title">Status</h4>
+          <div class="filter-chips vertical" id="status-chips-sidebar" role="tablist">
+            <button type="button" data-status="all" class="active">Todas</button>
+            <button type="button" data-status="open">Abertas</button>
+            <button type="button" data-status="in_progress">Em andamento</button>
+            <button type="button" data-status="resolved">Resolvidas</button>
+          </div>
+        </div>
 
-      <div class="map-wrap">
-        <div id="map"></div>
+        <div class="sidebar-panel" style="margin-top:14px;" id="sidebar-stats">
+          <h4 class="sidebar-title">Totais</h4>
+          <div class="sidebar-stats-list">
+            <div class="sidebar-stat-row"><span>Ocorrências</span><strong id="ss-total">—</strong></div>
+            <div class="sidebar-stat-row open-color"><span>Abertas</span><strong id="ss-open">—</strong></div>
+            <div class="sidebar-stat-row prog-color"><span>Em andamento</span><strong id="ss-prog">—</strong></div>
+            <div class="sidebar-stat-row res-color"><span>Resolvidas</span><strong id="ss-res">—</strong></div>
+          </div>
+        </div>
+
+        <div class="sidebar-panel" style="margin-top:14px;">
+          <h4 class="sidebar-title">Como funciona</h4>
+          <ul class="sidebar-tips">
+            <li>Reporte um problema no seu bairro.</li>
+            <li>Vote nas ocorrências que mais importam.</li>
+            <li>Acompanhe o prefeito no Termômetro.</li>
+          </ul>
+          <a href="mandates.html" class="sidebar-cta">Ver Termômetro →</a>
+        </div>
+      </aside>
+
+      <!-- Coluna principal -->
+      <div class="main-col">
+        <span class="eyebrow">Plataforma cívica · Feed público</span>
+        <h2 class="page-title">Ocorrências da sua cidade</h2>
+        <p class="page-sub">Veja, vote e reporte problemas urbanos. Tudo aberto, sem login para ler.</p>
+
+        <div class="map-wrap">
+          <div id="map"></div>
+        </div>
+
+        <div class="search-bar">
+          <input id="search" type="search" placeholder="Buscar por título, descrição, cidade ou CEP..." />
+        </div>
+
+        <!-- Chips de filtro — visível apenas em mobile (desktop usa sidebar) -->
+        <div class="filter-chips filter-chips-mobile" id="status-chips" role="tablist" aria-label="Filtrar por status">
+          <button type="button" data-status="all" class="active">Todas</button>
+          <button type="button" data-status="open">Abertas</button>
+          <button type="button" data-status="in_progress">Em andamento</button>
+          <button type="button" data-status="resolved">Resolvidas</button>
+        </div>
+
+        <div class="feed-header">
+          <h2>Resultados</h2>
+          <span class="count" id="count">—</span>
+        </div>
+
+        <div id="feed">
+          <div class="skeleton skeleton-card"></div>
+          <div class="skeleton skeleton-card"></div>
+        </div>
       </div>
 
-      <div class="search-bar">
-        <input id="search" type="search" placeholder="Buscar por título, descrição, cidade ou CEP..." />
-      </div>
+      <!-- Sidebar direita: trending + atividade -->
+      <aside class="sidebar sidebar-right">
+        <div class="sidebar-panel" id="sidebar-trending">
+          <h4 class="sidebar-title">Em alta</h4>
+          <div class="sidebar-loading">carregando…</div>
+        </div>
 
-      <div class="filter-chips" id="status-chips" role="tablist" aria-label="Filtrar por status">
-        <button type="button" data-status="all" class="active">Todas</button>
-        <button type="button" data-status="open">Abertas</button>
-        <button type="button" data-status="in_progress">Em andamento</button>
-        <button type="button" data-status="resolved">Resolvidas</button>
-      </div>
+        <div class="sidebar-panel" style="margin-top:14px;" id="sidebar-nearby-cta">
+          <h4 class="sidebar-title">Perto de mim</h4>
+          <p style="font-size:0.8rem;color:var(--text-muted);margin:0 0 10px;">Veja ocorrências no seu raio de 5 km.</p>
+          <button class="btn small" id="sidebar-nearby-btn" style="width:100%;">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+            Mostrar próximas
+          </button>
+        </div>
 
-      <div class="feed-header">
-        <h2>Resultados</h2>
-        <span class="count" id="count">—</span>
-      </div>
+        <div class="sidebar-panel" style="margin-top:14px;">
+          <h4 class="sidebar-title">Links rápidos</h4>
+          <nav class="sidebar-links">
+            <a href="dashboard.html">Dashboard</a>
+            <a href="mandates.html">Termômetro de gestões</a>
+            <a href="my.html">Minhas ocorrências</a>
+          </nav>
+        </div>
+      </aside>
 
-      <div id="feed">
-        <div class="skeleton skeleton-card"></div>
-        <div class="skeleton skeleton-card"></div>
-      </div>
     </div>
   </main>
 

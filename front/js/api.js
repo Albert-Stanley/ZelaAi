@@ -210,6 +210,10 @@ export const Api = {
     return request("DELETE", `/comments/${id}`, { token });
   },
 
+  editComment(id, body, token) {
+    return request("PATCH", `/comments/${id}`, { body: { updCommentBody: body }, token });
+  },
+
   myComments(token) {
     return request("GET", "/users/me/comments", { token });
   },

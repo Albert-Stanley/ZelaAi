@@ -4,6 +4,7 @@
 -- | DTOs do recurso /comments.
 module Dto.CommentDto
   ( CreateCommentDto(..)
+  , UpdateCommentDto(..)
   , CommentResponseDto(..)
   ) where
 
@@ -14,6 +15,10 @@ import Data.Time (UTCTime)
 
 data CreateCommentDto = CreateCommentDto
   { newCommentBody :: String
+  } deriving (Generic, Show, FromJSON, ToJSON)
+
+data UpdateCommentDto = UpdateCommentDto
+  { updCommentBody :: String
   } deriving (Generic, Show, FromJSON, ToJSON)
 
 data CommentResponseDto = CommentResponseDto

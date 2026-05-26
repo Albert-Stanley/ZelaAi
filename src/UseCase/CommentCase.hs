@@ -4,6 +4,7 @@
 -- listar do user logado.
 module UseCase.CommentCase
   ( createComment
+  , editComment
   , listCommentsByOccurrence
   , deleteComment
   , listMyComments
@@ -12,7 +13,7 @@ module UseCase.CommentCase
 import Data.Time (getCurrentTime)
 import Data.List (sortOn)
 import Database.Persist
-  ( Entity(..), get, selectList, insert, delete, (==.)
+  ( Entity(..), get, selectList, insert, delete, update, (==.), (=.)
   )
 import Database.Persist.Sql (ConnectionPool, runSqlPool, fromSqlKey, toSqlKey)
 
@@ -58,6 +59,38 @@ createComment pool uid oidInt body = do
                   , D.commentUsername     = username
                   , D.commentBody         = trimmed
                   , D.commentCreatedAt    = now
+                  }
+
+-- | Edita o body de um comentário. Apenas o autor pode.
+editComment
+  :: ConnectionPool
+  -> E.UserId
+  -> Int           -- ^ comment id
+  -> String        -- ^ novo body
+  -> IO (Either String D.CommentResponseDto)
+editComment pool reqUid cidInt body = do
+  let trimmed = trim body
+  if null trimmed
+    then return $ Left "comment body is empty"
+    else if length trimmed > 1000
+      then return $ Left "comment too long (max 1000 chars)"
+      else do
+        let cid = toSqlKey (fromIntegral cidInt) :: E.CommentId
+        mc <- runSqlPool (get cid) pool
+        case mc of
+          Nothing -> return $ Left "comment not found"
+          Just c
+            | E.commentUserId c /= reqUid -> return $ Left "forbidden"
+            | otherwise -> do
+                runSqlPool (update cid [E.CommentBody =. trimmed]) pool
+                username <- userOf pool reqUid
+                return $ Right D.CommentResponseDto
+                  { D.commentId           = fromSqlKey cid
+                  , D.commentOccurrenceId = fromSqlKey (E.commentOccurrenceId c)
+                  , D.commentUserId       = fromSqlKey reqUid
+                  , D.commentUsername     = username
+                  , D.commentBody         = trimmed
+                  , D.commentCreatedAt    = E.commentCreatedAt c
                   }
 
 -- | Lista comentários da ocorrência, ordenados por createdAt asc (cronológico).
