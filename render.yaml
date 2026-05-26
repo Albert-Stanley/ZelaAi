@@ -1,0 +1,94 @@
+# ============================================================================
+# ZelaAi — Render Blueprint
+# Sobe os 3 serviços com 1 clique: https://render.com/docs/blueprint-spec
+#
+# Como usar:
+#   1. Push deste repo para o GitHub
+#   2. https://dashboard.render.com/blueprints/new -> aponte para o repo
+#   3. Render lê este arquivo e cria automaticamente:
+#        - Postgres (free 90 dias)
+#        - Backend Haskell (web service, free)
+#        - Front estático (static site, free)
+#   4. As env vars (DATABASE_URL, FRONT_URL, JWT_SECRET) são preenchidas
+#      automaticamente via referências entre serviços.
+#
+# Após o primeiro deploy, atualize o conteudo da meta tag api-base nos HTMLs
+# para a URL pública do backend (ou rode o script scripts/inject-api-base.sh).
+# ============================================================================
+
+databases:
+  - name: zelaai-db
+    plan: free
+    databaseName: zelaai
+    user: zelaai
+    postgresMajorVersion: 15
+
+services:
+  # --------------------------- Backend (Haskell + Servant) -------------------
+  - type: web
+    name: zelaai-api
+    runtime: docker
+    plan: free
+    region: oregon            # mude se preferir outra região
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: zelaai-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true   # Render gera um segredo aleatorio na criacao
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false           # voce preenche depois com a URL do front
+      # PORT é injetada automaticamente pela Render
+
+  # --------------------------- Front estático --------------------------------
+  - type: web
+    name: zelaai-front
+    runtime: static
+    plan: free
+    staticPublishPath: ./front
+    buildCommand: |
+      # Injeta a URL publica da API na meta tag de cada HTML, substituindo o
+      # placeholder content="" por content="$API_URL".
+      set -e
+      if [ -n "$API_URL" ]; then
+        echo "Injecting API_URL=$API_URL into HTML files..."
+        find front -name "*.html" -exec sed -i "s|<meta name=\"api-base\" content=\"\"|<meta name=\"api-base\" content=\"$API_URL\"|g" {} \;
+      else
+        echo "WARN: API_URL nao definida, front vai tentar mesmo host"
+      fi
+    autoDeploy: true
+    envVars:
+      - key: API_URL
+        fromService:
+          name: zelaai-api
+          type: web
+          property: host       # URL do backend (sem trailing slash)
+    headers:
+      - path: /*
+        name: X-Frame-Options
+        value: SAMEORIGIN
+      - path: /*
+        name: Referrer-Policy
+        value: strict-origin-when-cross-origin
+      - path: /assets/*
+        name: Cache-Control
+        value: public, max-age=31536000, immutable
+    routes:
+      # SPA-style fallback: links bonitos como /dashboard caem em dashboard.html
+      - type: rewrite
+        source: /dashboard
+        destination: /dashboard.html
+      - type: rewrite
+        source: /mandates
+        destination: /mandates.html
+      - type: rewrite
+        source: /my
+        destination: /my.html
+      - type: rewrite
+        source: /login
+        destination: /login.html

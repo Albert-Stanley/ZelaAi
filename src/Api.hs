@@ -11,12 +11,16 @@ module Api
   , server
   ) where
 
+import Control.Exception (try, SomeException)
+import Control.Monad.IO.Class (liftIO)
+import Control.Monad.Reader (ReaderT)
 import Data.Aeson (ToJSON)
 import qualified Data.Text as T
 import Data.Int (Int64)
+import Data.Time.Clock (getCurrentTime)
 import GHC.Generics (Generic)
 import Servant
-import Database.Persist.Sql (ConnectionPool)
+import Database.Persist.Sql (ConnectionPool, Single, SqlBackend, rawSql, runSqlPool)
 
 import qualified Dto.UserDto as D
 import qualified Dto.CategoryDto as C
@@ -31,8 +35,37 @@ data Hello = Hello { mensagem :: String } deriving (Generic, ToJSON)
 helloHandler :: Handler Hello
 helloHandler = return (Hello "ZelaAi no ar")
 
+-- | Healthcheck para Render/Docker. Faz um SELECT 1 no Postgres para garantir
+-- que a aplicação + banco estão respondendo. Retorna 503 se o DB falhar.
+data HealthStatus = HealthStatus
+  { status  :: String   -- "ok" | "degraded"
+  , db      :: String   -- "ok" | "down"
+  , service :: String   -- "ZelaAi"
+  , version :: String   -- semver
+  , time    :: String   -- ISO 8601
+  } deriving (Generic, ToJSON)
+
+healthHandler :: ConnectionPool -> Handler HealthStatus
+healthHandler pool = do
+  now <- liftIO getCurrentTime
+  dbOk <- liftIO $ do
+    let ping = rawSql "SELECT 1" [] :: ReaderT SqlBackend IO [Single Int]
+    r <- try (runSqlPool ping pool) :: IO (Either SomeException [Single Int])
+    return $ case r of Right _ -> True; Left _ -> False
+  let payload = HealthStatus
+        { status  = if dbOk then "ok" else "degraded"
+        , db      = if dbOk then "ok" else "down"
+        , service = "ZelaAi"
+        , version = "0.1.0"
+        , time    = show now
+        }
+  if dbOk
+    then return payload
+    else throwError err503 { errBody = "{\"status\":\"degraded\",\"db\":\"down\"}" }
+
 type API =
        Get '[JSON] Hello
+  :<|> "health" :> Get '[JSON] HealthStatus
 
   -- Users
   :<|> "users" :> "register" :> ReqBody '[JSON] D.RegisterUserDto :> Post '[JSON] D.UserResponseDto
@@ -92,6 +125,7 @@ type API =
 server :: ConnectionPool -> Server API
 server pool =
        helloHandler
+  :<|> healthHandler pool
   :<|> Ctrl.registerController pool
   :<|> Ctrl.loginController pool
   :<|> Ctrl.listMyOccurrencesController pool
