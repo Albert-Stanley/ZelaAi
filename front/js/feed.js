@@ -1,6 +1,8 @@
 import { Api } from "./api.js";
 import { Auth, toast } from "./auth.js";
 import { Theme } from "./theme.js";
+import { attachCepLookup } from "./cep.js";
+import { attachUploader, cloudinaryConfigured } from "./upload.js";
 
 // Feed é PÚBLICO — não exige login. Só esconde o FAB se não tiver sessão.
 const isLogged = Auth.isLogged();
@@ -281,6 +283,31 @@ fabNew.addEventListener("click", async () => {
     );
   }
 });
+// auto-completa cidade/UF do CEP no modal de nova ocorrência (via ViaCEP)
+attachCepLookup(
+  document.getElementById("oc-cep"),
+  document.getElementById("oc-cep-hint")
+);
+
+// upload de foto via Cloudinary se as meta tags estiverem preenchidas;
+// caso contrário deixa a URL manual como única opção
+const uploaderActive = attachUploader({
+  dropZone: document.getElementById("oc-drop"),
+  fileInput: document.getElementById("oc-file"),
+  preview:  document.getElementById("oc-preview"),
+  urlInput: document.getElementById("oc-photo"),
+  status:   document.getElementById("oc-upload-status"),
+});
+if (!uploaderActive) {
+  // sem Cloudinary: esconde o upload zone e abre o fallback de URL
+  const drop = document.getElementById("oc-drop");
+  const fb   = document.querySelector(".upload-fallback");
+  const urlI = document.getElementById("oc-photo");
+  if (drop) drop.style.display = "none";
+  if (fb)   { fb.open = true; fb.querySelector("summary").style.display = "none"; }
+  if (urlI) urlI.required = true;
+}
+
 btnCancel.addEventListener("click", () => modal.classList.remove("open"));
 modal.addEventListener("click", (e) => { if (e.target === modal) modal.classList.remove("open"); });
 document.addEventListener("keydown", (e) => { if (e.key === "Escape") modal.classList.remove("open"); });
@@ -289,7 +316,7 @@ formNew.addEventListener("submit", async (e) => {
   e.preventDefault();
   btnSave.disabled = true;
   btnSave.innerHTML = `<span class="spinner"></span> Publicando…`;
-  const cep = document.getElementById("oc-cep").value.trim();
+  const cep = document.getElementById("oc-cep").value.replace(/\D/g, "");
   const payload = {
     categoryId:  Number(selectCat.value),
     title:       document.getElementById("oc-title").value.trim(),

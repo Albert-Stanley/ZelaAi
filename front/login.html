@@ -8,6 +8,7 @@
   <title>ZelaAi — Entrar</title>
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
   <link rel="apple-touch-icon" href="assets/favicon.svg" />
+  <link rel="manifest" href="manifest.json" />
   <meta name="description" content="Plataforma de zeladoria pública: reporte, vote e acompanhe ocorrências da sua cidade." />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="ZelaAi" />
@@ -77,8 +78,8 @@
         </div>
         <div class="field">
           <label for="su-cep">CEP</label>
-          <input id="su-cep" type="text" inputmode="numeric" pattern="\d{8}" required maxlength="8" placeholder="00000000" />
-          <div class="hint">só números, 8 dígitos. Vamos puxar sua cidade e estado.</div>
+          <input id="su-cep" type="text" inputmode="numeric" required maxlength="9" placeholder="00000-000" />
+          <div class="hint" id="su-cep-hint">vamos puxar sua cidade e estado automaticamente</div>
         </div>
         <button class="btn" type="submit" id="btn-signup">Criar conta</button>
       </form>
@@ -90,5 +91,6 @@
   </div>
 
   <script type="module" src="js/login.js"></script>
+  <script type="module" src="js/pwa.js"></script>
 </body>
 </html>

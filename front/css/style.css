@@ -497,7 +497,18 @@ h1, h2, h3, h4 {
   box-shadow: 0 0 0 4px var(--primary-glow);
 }
 .field textarea { resize: vertical; min-height: 96px; }
-.field .hint { font-size: 0.72rem; color: var(--text-muted); margin-top: 5px; }
+.field .hint {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-top: 5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: color var(--t-fast);
+}
+.field .hint.ok  { color: var(--primary-dark); font-weight: 600; }
+.field .hint.err { color: var(--danger);      font-weight: 600; }
+[data-theme="dark"] .field .hint.ok { color: var(--primary); }
 
 /* =============================== Buttons =================================== */
 
@@ -1315,4 +1326,224 @@ h1, h2, h3, h4 {
   border-top-color: var(--primary);
   animation: spin 0.8s linear infinite;
   flex-shrink: 0;
+}
+
+/* =============================== Install banner (PWA) ====================== */
+
+.install-banner {
+  position: fixed;
+  left: 50%;
+  bottom: 20px;
+  transform: translate(-50%, 140%);
+  z-index: 150;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 12px 14px 12px 12px;
+  box-shadow: var(--shadow-lg);
+  max-width: calc(100vw - 32px);
+  width: 380px;
+  transition: transform 0.34s cubic-bezier(.4,0,.2,1), opacity var(--t-base);
+  opacity: 0;
+}
+.install-banner.show { transform: translate(-50%, 0); opacity: 1; }
+.install-banner-icon {
+  width: 38px; height: 38px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  color: white;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: var(--shadow-primary);
+}
+[data-theme="dark"] .install-banner-icon { color: #0a1612; }
+.install-banner-text { flex: 1; min-width: 0; }
+.install-banner-text strong {
+  display: block;
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--text);
+}
+.install-banner-text small {
+  display: block;
+  font-size: 0.74rem;
+  color: var(--text-soft);
+  margin-top: 1px;
+}
+.install-banner-btn {
+  background: var(--primary);
+  color: white;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.78rem;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background var(--t-fast);
+}
+[data-theme="dark"] .install-banner-btn { color: #0a1612; }
+.install-banner-btn:hover { background: var(--primary-dark); }
+.install-banner-close {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 1.3rem;
+  line-height: 1;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all var(--t-fast);
+  flex-shrink: 0;
+}
+.install-banner-close:hover { background: var(--bg-deep); color: var(--text); }
+@media (max-width: 460px) {
+  .install-banner-text small { display: none; }
+  .install-banner { padding: 10px; gap: 8px; }
+}
+
+/* =============================== Upload zone (Cloudinary) ================== */
+
+.upload-zone {
+  border: 1.5px dashed var(--border-strong);
+  border-radius: var(--radius);
+  padding: 14px;
+  background: var(--bg);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  transition: all var(--t-fast);
+  outline: none;
+}
+.upload-zone:hover,
+.upload-zone:focus-visible {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+}
+.upload-zone.drag-active {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+  box-shadow: 0 0 0 4px var(--primary-glow);
+}
+.upload-cta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--text-soft);
+  flex: 1;
+  min-width: 0;
+}
+.upload-cta > svg {
+  flex-shrink: 0;
+  color: var(--primary);
+}
+.upload-cta strong {
+  display: block;
+  color: var(--text);
+  font-weight: 700;
+  font-size: 0.92rem;
+}
+.upload-cta small {
+  display: block;
+  color: var(--text-muted);
+  font-size: 0.74rem;
+  margin-top: 1px;
+}
+.upload-preview {
+  width: 56px;
+  height: 56px;
+  border-radius: 10px;
+  background: var(--bg-deep);
+  flex-shrink: 0;
+  overflow: hidden;
+  display: none;
+  border: 1px solid var(--border);
+}
+.upload-preview.has-image { display: block; }
+.upload-preview img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.upload-status {
+  margin-top: 8px;
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  min-height: 18px;
+  position: relative;
+  padding-left: 0;
+  --progress: 0%;
+}
+.upload-status.loading {
+  color: var(--text-soft);
+}
+.upload-status.loading::after,
+.upload-status.ok::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; bottom: -3px;
+  height: 2px;
+  background: var(--bg-deep);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.upload-status.loading::before,
+.upload-status.ok::before {
+  content: "";
+  position: absolute;
+  left: 0; bottom: -3px;
+  height: 2px;
+  width: var(--progress);
+  background: linear-gradient(90deg, var(--primary), var(--accent));
+  border-radius: 2px;
+  z-index: 1;
+  transition: width 0.2s linear;
+}
+.upload-status.ok  { color: var(--primary-dark); font-weight: 600; }
+.upload-status.err { color: var(--danger); font-weight: 600; }
+[data-theme="dark"] .upload-status.ok { color: var(--primary); }
+
+.upload-fallback {
+  margin-top: 10px;
+  font-size: 0.78rem;
+}
+.upload-fallback > summary {
+  cursor: pointer;
+  color: var(--text-muted);
+  font-weight: 600;
+  list-style: none;
+  user-select: none;
+  padding: 4px 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.upload-fallback > summary::-webkit-details-marker { display: none; }
+.upload-fallback > summary::before {
+  content: "›";
+  display: inline-block;
+  transition: transform var(--t-fast);
+  font-weight: 700;
+}
+.upload-fallback[open] > summary::before { transform: rotate(90deg); }
+.upload-fallback > summary:hover { color: var(--text-soft); }
+.upload-fallback > input {
+  width: 100%;
+  margin-top: 6px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  background: var(--surface);
+  color: var(--text);
+  transition: all var(--t-fast);
+}
+.upload-fallback > input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px var(--primary-glow);
 }

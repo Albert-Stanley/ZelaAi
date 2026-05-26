@@ -1,0 +1,41 @@
+{
+  "name": "ZelaAi — Zeladoria pública",
+  "short_name": "ZelaAi",
+  "description": "Reporte, vote e acompanhe ocorrências urbanas da sua cidade.",
+  "start_url": "/index.html",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0a1612",
+  "theme_color": "#0f9d58",
+  "lang": "pt-BR",
+  "categories": ["lifestyle", "government", "social"],
+  "icons": [
+    {
+      "src": "assets/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Nova ocorrência",
+      "short_name": "Nova",
+      "url": "/index.html?new=1",
+      "description": "Criar uma nova ocorrência"
+    },
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "url": "/dashboard.html",
+      "description": "Painel com gráficos e relatórios"
+    },
+    {
+      "name": "Termômetro",
+      "short_name": "Termômetro",
+      "url": "/mandates.html",
+      "description": "Avaliação das gestões"
+    }
+  ]
+}

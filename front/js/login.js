@@ -1,8 +1,15 @@
 import { Api, ApiError } from "./api.js";
 import { Auth, toast } from "./auth.js";
 import { Theme } from "./theme.js";
+import { attachCepLookup } from "./cep.js";
 
 Theme.mountToggle(document.getElementById("auth-top-actions"));
+
+// auto-completa cidade/UF do CEP no signup
+attachCepLookup(
+  document.getElementById("su-cep"),
+  document.getElementById("su-cep-hint")
+);
 
 // Se já estiver logado, manda direto pro feed
 if (Auth.isLogged()) {
@@ -46,7 +53,7 @@ formLogin.addEventListener("submit", async (e) => {
 formSignup.addEventListener("submit", async (e) => {
   e.preventDefault();
   const btn = document.getElementById("btn-signup");
-  const cep = document.getElementById("su-cep").value.trim();
+  const cep = document.getElementById("su-cep").value.replace(/\D/g, "");
   if (!/^\d{8}$/.test(cep)) {
     toast("CEP precisa ter 8 dígitos", "error");
     return;

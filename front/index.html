@@ -4,11 +4,14 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
   <meta name="api-base" content="" />
+  <meta name="cloudinary-cloud-name"  content="" />
+  <meta name="cloudinary-upload-preset" content="" />
   <meta name="theme-color" content="#0f9d58" />
   <title>ZelaAi — Feed</title>
 
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
   <link rel="apple-touch-icon" href="assets/favicon.svg" />
+  <link rel="manifest" href="manifest.json" />
   <meta name="description" content="Plataforma de zeladoria pública: reporte, vote e acompanhe ocorrências da sua cidade." />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="ZelaAi" />
@@ -110,14 +113,30 @@
           <textarea id="oc-desc" required maxlength="2000" placeholder="Descreva o problema com detalhes…"></textarea>
         </div>
         <div class="field">
-          <label for="oc-photo">URL da foto</label>
-          <input id="oc-photo" type="url" required placeholder="https://..." />
-          <div class="hint">cole o link de uma foto (Imgur, Cloudinary etc.)</div>
+          <label>Foto</label>
+          <div class="upload-zone" id="oc-drop" tabindex="0" role="button" aria-label="Selecionar foto">
+            <div class="upload-preview" id="oc-preview"></div>
+            <div class="upload-cta">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+              </svg>
+              <div>
+                <strong>Anexar foto</strong>
+                <small>arraste, cole ou clique para escolher (até 8MB)</small>
+              </div>
+            </div>
+            <input id="oc-file" type="file" accept="image/*" capture="environment" hidden />
+          </div>
+          <div class="upload-status" id="oc-upload-status"></div>
+          <details class="upload-fallback">
+            <summary>ou cole uma URL</summary>
+            <input id="oc-photo" type="url" placeholder="https://..." />
+          </details>
         </div>
         <div class="field">
           <label for="oc-cep">CEP (opcional)</label>
-          <input id="oc-cep" type="text" inputmode="numeric" maxlength="8" placeholder="00000000" />
-          <div class="hint">se vazio, usa o CEP do seu cadastro</div>
+          <input id="oc-cep" type="text" inputmode="numeric" maxlength="9" placeholder="00000-000" />
+          <div class="hint" id="oc-cep-hint">se vazio, usa o CEP do seu cadastro</div>
         </div>
         <div class="actions">
           <button type="button" class="btn secondary" id="btn-cancel">Cancelar</button>
@@ -131,5 +150,6 @@
           integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
           crossorigin=""></script>
   <script type="module" src="js/feed.js"></script>
+  <script type="module" src="js/pwa.js"></script>
 </body>
 </html>
