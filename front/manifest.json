@@ -32,8 +32,8 @@
       "description": "Painel com gráficos e relatórios"
     },
     {
-      "name": "Termômetro",
-      "short_name": "Termômetro",
+      "name": "Gestões",
+      "short_name": "Gestões",
       "url": "/mandates.html",
       "description": "Avaliação das gestões"
     }

@@ -186,6 +186,82 @@ function loadLeafletHeat() {
   });
 }
 
+// ----------- Fullscreen map ------------------------------------------------
+
+const fsBtn = document.createElement("button");
+fsBtn.type = "button";
+fsBtn.className = "map-fs";
+fsBtn.title = "Ver mapa em tela cheia";
+fsBtn.setAttribute("aria-label", "Tela cheia");
+fsBtn.innerHTML = `
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
+  Tela cheia
+`;
+mapWrap.appendChild(fsBtn);
+
+let fsOverlay = null;
+function openFullscreenMap() {
+  if (fsOverlay) return;
+  fsOverlay = document.createElement("div");
+  fsOverlay.className = "map-fs-overlay";
+  fsOverlay.innerHTML = `
+    <header class="map-fs-header">
+      <button type="button" class="map-fs-back" id="map-fs-back" aria-label="Voltar">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        <span>Voltar</span>
+      </button>
+      <div class="map-fs-title">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        <span>Mapa de ocorrências</span>
+        <em id="map-fs-count">${allOccs.length} pinos</em>
+      </div>
+      <div class="map-fs-legend">
+        <span class="map-fs-dot" style="background:#f59e0b"></span>Aberta
+        <span class="map-fs-dot" style="background:#3b82f6"></span>Em andamento
+        <span class="map-fs-dot" style="background:#0f9d58"></span>Resolvida
+      </div>
+    </header>
+    <div class="map-fs-body" id="map-fs-body"></div>
+  `;
+  document.body.appendChild(fsOverlay);
+  document.body.classList.add("map-fs-open");
+
+  // move o #map para dentro do overlay (preserva o leaflet, evita re-init)
+  const body = fsOverlay.querySelector("#map-fs-body");
+  body.appendChild(mapEl);
+  if (map) {
+    requestAnimationFrame(() => {
+      map.invalidateSize();
+      // se markers visíveis, ajusta bounds; senão mantém view atual
+      if (!heatMode && markerLayer && markerLayer.getLayers().length > 0) {
+        const group = L.featureGroup(markerLayer.getLayers());
+        try { map.fitBounds(group.getBounds(), { padding: [60, 60], maxZoom: 15 }); } catch {}
+      }
+    });
+  }
+
+  fsOverlay.querySelector("#map-fs-back").addEventListener("click", closeFullscreenMap);
+}
+
+function closeFullscreenMap() {
+  if (!fsOverlay) return;
+  // devolve o #map ao map-wrap original
+  mapWrap.insertBefore(mapEl, mapWrap.firstChild);
+  fsOverlay.remove();
+  fsOverlay = null;
+  document.body.classList.remove("map-fs-open");
+  if (map) requestAnimationFrame(() => map.invalidateSize());
+}
+
+fsBtn.addEventListener("click", openFullscreenMap);
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && fsOverlay) {
+    e.stopPropagation();
+    closeFullscreenMap();
+  }
+}, true);
+
 heatBtn.addEventListener("click", async () => {
   if (!map) { toast("aguarde o mapa carregar", "error"); return; }
   if (!heatMode) {

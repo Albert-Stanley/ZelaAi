@@ -324,7 +324,7 @@ function renderTopVoted(occs) {
 function renderMandates(mandates) {
   const el = document.getElementById("top-mandates");
   if (!mandates || mandates.length === 0) {
-    el.innerHTML = `<div class="empty-mini">Nenhum mandato cadastrado.<br>Veja em <a href="mandates.html">Termômetro</a>.</div>`;
+    el.innerHTML = `<div class="empty-mini">Nenhum mandato cadastrado.<br>Veja em <a href="mandates.html">Gestões</a>.</div>`;
     return;
   }
   // mostra até 5

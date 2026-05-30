@@ -13,7 +13,7 @@
       <nav class="site-footer-links" aria-label="Links do rodapé">
         <a href="index.html">Feed</a>
         <a href="dashboard.html">Dashboard</a>
-        <a href="mandates.html">Termômetro</a>
+        <a href="mandates.html">Gestões</a>
         <a href="my.html">Minhas</a>
         <a href="login.html">Entrar</a>
       </nav>

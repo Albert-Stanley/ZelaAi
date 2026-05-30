@@ -9,7 +9,7 @@ front/
 ├── index.html            Feed público + mapa + modal de criar ocorrência
 ├── login.html            Login + Cadastro
 ├── occurrence.html       Detalhe da ocorrência + voto + status
-├── mandates.html         Termômetro de gestão (score por mandato)
+├── mandates.html         Avaliação das gestões (score por mandato)
 ├── my.html               Minhas ocorrências (UC10)
 ├── css/
 │   └── style.css         Design system mobile-first (Inter + Plus Jakarta)
