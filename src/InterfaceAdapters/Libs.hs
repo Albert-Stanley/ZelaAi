@@ -77,11 +77,13 @@ verifyPassword plain hashed =
 
 -- JWT ----------------------------------------------------------------
 
--- | Token com subject = userId, expira em 24h.
+-- | Token com subject = userId. Expira em 15min — janela curta o suficiente
+-- para limitar dano de token vazado sem precisar de refresh tokens em DB.
+-- O front detecta 401 e leva o usuário ao login.
 generateTokenJwt :: Int64 -> IO String
 generateTokenJwt uid = do
   now <- getPOSIXTime
-  let expiry = now + 60 * 60 * 24    -- 24h
+  let expiry = now + 60 * 15         -- 15min
       cs = mempty
             { JWT.sub = JWT.stringOrURI (T.pack (show uid))
             , JWT.exp = JWT.numericDate expiry

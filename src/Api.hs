@@ -74,6 +74,8 @@ type API =
   :<|> "users" :> "login"    :> ReqBody '[JSON] D.LoginUserDto    :> Post '[JSON] D.LoginResponseDto
   :<|> "users" :> "me" :> "occurrences"
         :> Header "Authorization" T.Text
+        :> QueryParam "page"     Int
+        :> QueryParam "pageSize" Int
         :> Get '[JSON] [O.OccurrenceResponseDto]
 
   -- Categories
@@ -107,7 +109,10 @@ type API =
         :> Header "Authorization" T.Text
         :> ReqBody '[JSON] O.CreateOccurrenceDto
         :> Post '[JSON] O.OccurrenceResponseDto
-  :<|> "occurrences" :> Get '[JSON] [O.OccurrenceResponseDto]
+  :<|> "occurrences"
+        :> QueryParam "page"     Int
+        :> QueryParam "pageSize" Int
+        :> Get '[JSON] [O.OccurrenceResponseDto]
 
   -- Politicians
   :<|> "politicians"
@@ -151,6 +156,8 @@ type API =
   :<|> "occurrences"
         :> Capture "id" Int64
         :> "comments"
+        :> QueryParam "page"     Int
+        :> QueryParam "pageSize" Int
         :> Get '[JSON] [Cm.CommentResponseDto]
   :<|> "comments"
         :> Capture "id" Int64
@@ -163,6 +170,8 @@ type API =
         :> Patch '[JSON] Cm.CommentResponseDto
   :<|> "users" :> "me" :> "comments"
         :> Header "Authorization" T.Text
+        :> QueryParam "page"     Int
+        :> QueryParam "pageSize" Int
         :> Get '[JSON] [Cm.CommentResponseDto]
 
   -- Admin
@@ -189,7 +198,7 @@ server pool =
   :<|> healthHandler pool
   :<|> Ctrl.registerController pool
   :<|> Ctrl.loginController pool
-  :<|> Ctrl.listMyOccurrencesController pool
+  :<|> (\auth mp ms -> Ctrl.listMyOccurrencesController pool auth mp ms)
   :<|> Ctrl.listCategoriesController pool
   :<|> Ctrl.listOccurrencesByCepController pool
   :<|> (\oid auth -> Ctrl.voteController pool auth oid)
@@ -197,7 +206,7 @@ server pool =
   :<|> (\oid auth dto -> Ctrl.updateStatusController pool auth oid dto)
   :<|> Ctrl.getOccurrenceController pool
   :<|> Ctrl.createOccurrenceController pool
-  :<|> Ctrl.listOccurrencesController pool
+  :<|> (\mp ms -> Ctrl.listOccurrencesController pool mp ms)
   :<|> Ctrl.createPoliticianController pool
   :<|> Ctrl.mandateScoreController pool
   :<|> Ctrl.createMandateController pool
@@ -206,10 +215,10 @@ server pool =
   :<|> (\oid auth     -> Ctrl.deleteOccurrenceController pool auth oid)
   :<|> Ctrl.nearbyOccurrencesController pool
   :<|> (\oid auth dto -> Ctrl.createCommentController pool auth oid dto)
-  :<|> Ctrl.listCommentsController pool
+  :<|> (\oid mp ms -> Ctrl.listCommentsController pool oid mp ms)
   :<|> (\cid auth     -> Ctrl.deleteCommentController pool auth cid)
   :<|> (\cid auth dto -> Ctrl.editCommentController pool auth cid dto)
-  :<|> Ctrl.listMyCommentsController pool
+  :<|> (\auth mp ms -> Ctrl.listMyCommentsController pool auth mp ms)
   :<|> Ctrl.adminListUsersController pool
   :<|> (\uid auth dto -> Ctrl.adminSetUserRoleController pool auth uid dto)
   :<|> Ctrl.adminStatsController pool

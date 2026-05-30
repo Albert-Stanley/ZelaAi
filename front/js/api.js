@@ -117,6 +117,14 @@ async function request(method, path, { body, token, _retried = 0 } = {}) {
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
+// Monta querystring de paginação (omite valores undefined).
+function pageQuery(page, pageSize) {
+  const p = [];
+  if (page)     p.push(`page=${encodeURIComponent(page)}`);
+  if (pageSize) p.push(`pageSize=${encodeURIComponent(pageSize)}`);
+  return p.length ? `?${p.join("&")}` : "";
+}
+
 // ---------- Users ----------
 export const Api = {
   register({ name, username, password, cep }) {
@@ -137,8 +145,9 @@ export const Api = {
   },
 
   // ---------- Occurrences ----------
-  listOccurrences() {
-    return request("GET", "/occurrences");
+  listOccurrences({ page, pageSize } = {}) {
+    const q = pageQuery(page, pageSize);
+    return request("GET", `/occurrences${q}`);
   },
 
   getOccurrence(id) {
@@ -157,8 +166,9 @@ export const Api = {
     return request("PATCH", `/occurrences/${id}/status`, { body: { newStatus }, token });
   },
 
-  myOccurrences(token) {
-    return request("GET", "/users/me/occurrences", { token });
+  myOccurrences(token, { page, pageSize } = {}) {
+    const q = pageQuery(page, pageSize);
+    return request("GET", `/users/me/occurrences${q}`, { token });
   },
 
   // ---------- Votes ----------
@@ -195,8 +205,9 @@ export const Api = {
   },
 
   // ---------- Comments ----------
-  listComments(occId) {
-    return request("GET", `/occurrences/${occId}/comments`);
+  listComments(occId, { page, pageSize } = {}) {
+    const q = pageQuery(page, pageSize);
+    return request("GET", `/occurrences/${occId}/comments${q}`);
   },
 
   createComment(occId, body, token) {
@@ -214,8 +225,9 @@ export const Api = {
     return request("PATCH", `/comments/${id}`, { body: { updCommentBody: body }, token });
   },
 
-  myComments(token) {
-    return request("GET", "/users/me/comments", { token });
+  myComments(token, { page, pageSize } = {}) {
+    const q = pageQuery(page, pageSize);
+    return request("GET", `/users/me/comments${q}`, { token });
   },
 
   // ---------- Admin ----------

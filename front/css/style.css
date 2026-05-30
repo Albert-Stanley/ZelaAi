@@ -2442,6 +2442,24 @@ kbd {
   .site-footer-inner { justify-content: center; text-align: center; flex-direction: column; align-items: center; }
 }
 
+/* =============================== Load more / paginação =================== */
+
+.load-more-wrap {
+  display: flex;
+  justify-content: center;
+  margin: 16px 0 8px;
+}
+.load-more-wrap .btn {
+  min-width: 200px;
+}
+.load-end {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  padding: 16px 0 8px;
+  letter-spacing: 0.04em;
+}
+
 /* =============================== Reduced motion =========================== */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

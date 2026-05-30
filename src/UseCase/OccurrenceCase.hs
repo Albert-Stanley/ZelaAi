@@ -14,6 +14,8 @@ module UseCase.OccurrenceCase
   , softDeleteOccurrence
   , hardDeleteOccurrence
   , nearbyOccurrences
+  , paginate
+  , clampPage
   ) where
 
 import Data.Time (getCurrentTime, utctDay)
@@ -84,12 +86,19 @@ createOccurrence pool uid dto = do
           Logs.logInfo $ "occurrence created: " ++ show (fromSqlKey newKey)
           return $ Right (toDto (Entity newKey occ) 0)
 
--- | Lista todas ocorrencias não-deletadas, ordenadas por votos desc.
-listOccurrences :: ConnectionPool -> IO [D.OccurrenceResponseDto]
-listOccurrences pool = do
+-- | Lista ocorrencias não-deletadas, ordenadas por votos desc. Paginada.
+-- Defaults: page=1, pageSize=50. pageSize máximo permitido: 200.
+listOccurrences
+  :: ConnectionPool
+  -> Maybe Int  -- ^ page (1-based)
+  -> Maybe Int  -- ^ pageSize
+  -> IO [D.OccurrenceResponseDto]
+listOccurrences pool mPage mSize = do
   occs <- runSqlPool (selectList notDeleted []) pool
   withVotes <- mapM (attachVoteCount pool) occs
-  return $ sortOn (Down . D.occVoteCount) withVotes
+  let sorted = sortOn (Down . D.occVoteCount) withVotes
+      (p, s) = clampPage mPage mSize
+  return (paginate p s sorted)
 
 -- | Busca uma ocorrencia por id. Retorna Nothing se deletada.
 getOccurrence :: ConnectionPool -> Int -> IO (Maybe D.OccurrenceResponseDto)
@@ -138,11 +147,18 @@ updateStatus pool oidInt newSt = do
                 Nothing -> return $ Left "occurrence vanished after update"
                 Just u  -> Right <$> attachVoteCount pool (Entity oid u)
 
-listMyOccurrences :: ConnectionPool -> E.UserId -> IO [D.OccurrenceResponseDto]
-listMyOccurrences pool uid = do
+listMyOccurrences
+  :: ConnectionPool
+  -> E.UserId
+  -> Maybe Int
+  -> Maybe Int
+  -> IO [D.OccurrenceResponseDto]
+listMyOccurrences pool uid mPage mSize = do
   occs <- runSqlPool (selectList ((E.OccurrenceUserId ==. uid) : notDeleted) []) pool
   withVotes <- mapM (attachVoteCount pool) occs
-  return $ sortOn (Down . D.occCreatedAt) withVotes
+  let sorted = sortOn (Down . D.occCreatedAt) withVotes
+      (p, s) = clampPage mPage mSize
+  return (paginate p s sorted)
 
 -- | Atualiza campos editáveis (title/desc/photo/category). Autorização:
 -- apenas o dono ou um admin (callsite valida).
@@ -280,6 +296,18 @@ toDto (Entity oid o) votes = D.OccurrenceResponseDto
   , D.occMandateId   = fmap fromSqlKey (E.occurrenceMandateId o)
   , D.occVoteCount   = votes
   }
+
+-- | Normaliza page/pageSize com defaults e limites. page mínimo 1,
+-- pageSize entre 1 e 200 (default 50).
+clampPage :: Maybe Int -> Maybe Int -> (Int, Int)
+clampPage mPage mSize =
+  let p = max 1 (maybe 1 id mPage)
+      s = max 1 (min 200 (maybe 50 id mSize))
+  in (p, s)
+
+-- | Aplica offset/limit no estilo offset-pagination.
+paginate :: Int -> Int -> [a] -> [a]
+paginate page pageSize = take pageSize . drop ((page - 1) * pageSize)
 
 resolveLocation
   :: E.User

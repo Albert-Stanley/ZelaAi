@@ -102,9 +102,14 @@ createOccurrenceController pool authHeader dto = do
         Left err -> throwError (Err.badRequest err)
         Right ok -> return ok
 
--- GET /occurrences
-listOccurrencesController :: ConnectionPool -> Handler [O.OccurrenceResponseDto]
-listOccurrencesController pool = liftIO $ OC.listOccurrences pool
+-- GET /occurrences?page=&pageSize=
+listOccurrencesController
+  :: ConnectionPool
+  -> Maybe Int
+  -> Maybe Int
+  -> Handler [O.OccurrenceResponseDto]
+listOccurrencesController pool mPage mSize =
+  liftIO $ OC.listOccurrences pool mPage mSize
 
 -- GET /occurrences/:id
 getOccurrenceController :: ConnectionPool -> Int64 -> Handler O.OccurrenceResponseDto
@@ -139,14 +144,16 @@ updateStatusController pool authHeader oid dto = do
     Left err                    -> throwError (Err.badRequest err)
     Right ok                    -> return ok
 
--- GET /users/me/occurrences (JWT)
+-- GET /users/me/occurrences?page=&pageSize= (JWT)
 listMyOccurrencesController
   :: ConnectionPool
   -> Maybe T.Text
+  -> Maybe Int
+  -> Maybe Int
   -> Handler [O.OccurrenceResponseDto]
-listMyOccurrencesController pool authHeader = do
+listMyOccurrencesController pool authHeader mPage mSize = do
   uid <- Auth.extractUserId authHeader
-  liftIO $ OC.listMyOccurrences pool uid
+  liftIO $ OC.listMyOccurrences pool uid mPage mSize
 
 -- POST /occurrences/:id/vote (JWT)
 voteController
@@ -296,10 +303,15 @@ createCommentController pool h oid dto = do
     Left err                    -> throwError (Err.badRequest err)
     Right ok                    -> return ok
 
--- GET /occurrences/:id/comments
-listCommentsController :: ConnectionPool -> Int64 -> Handler [Cm.CommentResponseDto]
-listCommentsController pool oid =
-  liftIO $ CmC.listCommentsByOccurrence pool (fromIntegral oid)
+-- GET /occurrences/:id/comments?page=&pageSize=
+listCommentsController
+  :: ConnectionPool
+  -> Int64
+  -> Maybe Int
+  -> Maybe Int
+  -> Handler [Cm.CommentResponseDto]
+listCommentsController pool oid mPage mSize =
+  liftIO $ CmC.listCommentsByOccurrence pool (fromIntegral oid) mPage mSize
 
 -- PATCH /comments/:id  (JWT, apenas autor)
 editCommentController
@@ -332,14 +344,16 @@ deleteCommentController pool h cid = do
     Left err                 -> throwError (Err.badRequest err)
     Right ()                 -> return NoContent
 
--- GET /users/me/comments  (JWT)
+-- GET /users/me/comments?page=&pageSize= (JWT)
 listMyCommentsController
   :: ConnectionPool
   -> Maybe T.Text
+  -> Maybe Int
+  -> Maybe Int
   -> Handler [Cm.CommentResponseDto]
-listMyCommentsController pool h = do
+listMyCommentsController pool h mPage mSize = do
   uid <- Auth.extractUserId h
-  liftIO $ CmC.listMyComments pool uid
+  liftIO $ CmC.listMyComments pool uid mPage mSize
 
 -- GET /admin/users  (JWT + admin)
 adminListUsersController

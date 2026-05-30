@@ -278,16 +278,54 @@ const chipsEl = document.getElementById("status-chips");
 
 let allOccs = [];
 let activeStatus = "all";
+const PAGE_SIZE = 30;
+let currentPage = 1;
+let reachedEnd = false;
+let loadingMore = false;
 
 async function loadFeed() {
   feedEl.innerHTML = `<div class="skeleton skeleton-card"></div><div class="skeleton skeleton-card"></div>`;
+  currentPage = 1;
+  reachedEnd = false;
   try {
-    allOccs = await Api.listOccurrences();
+    const first = await Api.listOccurrences({ page: 1, pageSize: PAGE_SIZE });
+    allOccs = first;
+    reachedEnd = first.length < PAGE_SIZE;
     applyFilter();
     renderSidebarTrending(allOccs);
     renderSidebarStats(allOccs);
   } catch (e) {
     feedEl.innerHTML = `<div class="empty">erro ao carregar: ${escapeHtml(e.message)}</div>`;
+  }
+}
+
+async function loadMore() {
+  if (loadingMore || reachedEnd) return;
+  loadingMore = true;
+  const btn = document.getElementById("load-more-btn");
+  if (btn) { btn.disabled = true; btn.textContent = "Carregando…"; }
+  try {
+    const nextPage = currentPage + 1;
+    const more = await Api.listOccurrences({ page: nextPage, pageSize: PAGE_SIZE });
+    if (more.length === 0) {
+      reachedEnd = true;
+    } else {
+      currentPage = nextPage;
+      // dedup por id por garantia
+      const known = new Set(allOccs.map(o => o.occId));
+      const fresh = more.filter(o => !known.has(o.occId));
+      allOccs = allOccs.concat(fresh);
+      if (more.length < PAGE_SIZE) reachedEnd = true;
+      applyFilter();
+      renderSidebarTrending(allOccs);
+      renderSidebarStats(allOccs);
+    }
+  } catch (e) {
+    toast(e.message || "erro ao carregar mais", "error");
+  } finally {
+    loadingMore = false;
+    const btn2 = document.getElementById("load-more-btn");
+    if (btn2) { btn2.disabled = false; btn2.textContent = "Carregar mais"; }
   }
 }
 
@@ -320,6 +358,22 @@ function applyFilter() {
   const tpl = document.createElement("template");
   tpl.innerHTML = filtered.map(o => cardHtml(o)).join("");
   feedEl.replaceChildren(tpl.content);
+
+  // Botão "carregar mais" — só mostra quando não há filtro de status/busca ativo
+  // e ainda há mais páginas no servidor.
+  const noFilter = !q && activeStatus === "all";
+  if (noFilter && !reachedEnd) {
+    const more = document.createElement("div");
+    more.className = "load-more-wrap";
+    more.innerHTML = `<button type="button" class="btn secondary" id="load-more-btn">Carregar mais</button>`;
+    feedEl.appendChild(more);
+    more.querySelector("#load-more-btn").addEventListener("click", loadMore);
+  } else if (noFilter && reachedEnd && allOccs.length > 0) {
+    const end = document.createElement("div");
+    end.className = "load-end";
+    end.textContent = "— você chegou ao fim —";
+    feedEl.appendChild(end);
+  }
 
   // delegação de evento pra cliques no feed (1 listener em vez de N)
   scheduleMarkerDraw(filtered);

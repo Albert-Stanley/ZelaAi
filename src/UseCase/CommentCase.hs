@@ -94,11 +94,21 @@ editComment pool reqUid cidInt body = do
                   }
 
 -- | Lista comentários da ocorrência, ordenados por createdAt asc (cronológico).
-listCommentsByOccurrence :: ConnectionPool -> Int -> IO [D.CommentResponseDto]
-listCommentsByOccurrence pool oidInt = do
+-- Paginação opcional via page/pageSize (defaults: 1 / 50; máx 200).
+listCommentsByOccurrence
+  :: ConnectionPool
+  -> Int
+  -> Maybe Int
+  -> Maybe Int
+  -> IO [D.CommentResponseDto]
+listCommentsByOccurrence pool oidInt mPage mSize = do
   let oid = toSqlKey (fromIntegral oidInt) :: E.OccurrenceId
   cs <- runSqlPool (selectList [E.CommentOccurrenceId ==. oid] []) pool
-  mapM (toDto pool) (sortOn (\(Entity _ c) -> E.commentCreatedAt c) cs)
+  let sorted = sortOn (\(Entity _ c) -> E.commentCreatedAt c) cs
+      p     = max 1 (maybe 1 id mPage)
+      s     = max 1 (min 200 (maybe 50 id mSize))
+      page  = take s (drop ((p - 1) * s) sorted)
+  mapM (toDto pool) page
 
 -- | Deleta um comentário. Autor ou admin podem.
 deleteComment
@@ -120,11 +130,19 @@ deleteComment pool reqUid isAdmin cidInt = do
           return $ Right ()
 
 -- | Lista comentários do user logado, ordenados por mais recentes primeiro.
-listMyComments :: ConnectionPool -> E.UserId -> IO [D.CommentResponseDto]
-listMyComments pool uid = do
+listMyComments
+  :: ConnectionPool
+  -> E.UserId
+  -> Maybe Int
+  -> Maybe Int
+  -> IO [D.CommentResponseDto]
+listMyComments pool uid mPage mSize = do
   cs <- runSqlPool (selectList [E.CommentUserId ==. uid] []) pool
   withDtos <- mapM (toDto pool) cs
-  return $ reverse $ sortOn D.commentCreatedAt withDtos
+  let sorted = reverse $ sortOn D.commentCreatedAt withDtos
+      p = max 1 (maybe 1 id mPage)
+      s = max 1 (min 200 (maybe 50 id mSize))
+  return $ take s (drop ((p - 1) * s) sorted)
 
 -- Helpers ------------------------------------------------------------
 
