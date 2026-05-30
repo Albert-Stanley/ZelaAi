@@ -4,6 +4,7 @@ import { Theme } from "./theme.js";
 import { attachCepLookup } from "./cep.js";
 import { attachUploader, cloudinaryConfigured } from "./upload.js";
 import { mountKeyboardShortcuts } from "./keys.js";
+import { startOnboarding } from "./onboarding.js";
 
 // Feed é PÚBLICO — não exige login. Só esconde o FAB se não tiver sessão.
 const isLogged = Auth.isLogged();
@@ -354,6 +355,26 @@ const chipsEl = document.getElementById("status-chips");
 
 let allOccs = [];
 let activeStatus = "all";
+
+// ----- URL state ----------------------------------------------------------
+// Sincroniza filtro (status) e busca (q) com a URL. Permite compartilhar
+// links como ?status=resolved&q=buraco.
+function readUrlState() {
+  const u = new URL(window.location.href);
+  const s = u.searchParams.get("status");
+  const q = u.searchParams.get("q");
+  if (s && ["all","open","in_progress","resolved"].includes(s)) activeStatus = s;
+  if (q && searchInput) searchInput.value = q;
+}
+function writeUrlState() {
+  const u = new URL(window.location.href);
+  if (activeStatus && activeStatus !== "all") u.searchParams.set("status", activeStatus);
+  else u.searchParams.delete("status");
+  const q = (searchInput?.value || "").trim();
+  if (q) u.searchParams.set("q", q);
+  else u.searchParams.delete("q");
+  history.replaceState(null, "", u.toString());
+}
 const PAGE_SIZE = 30;
 let currentPage = 1;
 let reachedEnd = false;
@@ -363,6 +384,14 @@ async function loadFeed() {
   feedEl.innerHTML = `<div class="skeleton skeleton-card"></div><div class="skeleton skeleton-card"></div>`;
   currentPage = 1;
   reachedEnd = false;
+  readUrlState();
+  // espelha activeStatus nos chips
+  [chipsEl, sidebarChipsEl].forEach(el => {
+    if (!el) return;
+    el.querySelectorAll("button[data-status]").forEach(b => {
+      b.classList.toggle("active", b.dataset.status === activeStatus);
+    });
+  });
   try {
     const first = await Api.listOccurrences({ page: 1, pageSize: PAGE_SIZE });
     allOccs = first;
@@ -406,6 +435,7 @@ async function loadMore() {
 }
 
 function applyFilter() {
+  writeUrlState();
   const q = (searchInput.value || "").toLowerCase().trim();
   let filtered = allOccs;
   if (activeStatus !== "all") filtered = filtered.filter(o => o.occStatus === activeStatus);
@@ -424,8 +454,10 @@ function applyFilter() {
 
   if (filtered.length === 0) {
     feedEl.innerHTML = (q || activeStatus !== "all")
-      ? `<div class="empty">nada encontrado pra esse filtro</div>`
-      : `<div class="empty">Nenhuma ocorrência ainda${isLogged ? '.<br>Clique no <b>+</b> pra criar a primeira.' : '.<br><a href="login.html">Entre</a> pra reportar.'}</div>`;
+      ? emptyStateHtml("search", "Nada encontrado", "Tente outras palavras-chave ou troque o filtro de status.")
+      : emptyStateHtml("city", "Sua cidade está calma por aqui", isLogged
+          ? "Seja a primeira voz: clique no botão <b>+</b> para reportar um problema."
+          : '<a href="login.html">Entre</a> para reportar a primeira ocorrência.');
     scheduleMarkerDraw([]);
     return;
   }
@@ -441,7 +473,10 @@ function applyFilter() {
   if (noFilter && !reachedEnd) {
     const more = document.createElement("div");
     more.className = "load-more-wrap";
-    more.innerHTML = `<button type="button" class="btn secondary" id="load-more-btn">Carregar mais</button>`;
+    more.innerHTML = `
+      <button type="button" class="btn secondary" id="load-more-btn">Carregar mais</button>
+      <span class="load-more-count">mostrando <b>${allOccs.length}</b> ocorrências (página ${currentPage})</span>
+    `;
     feedEl.appendChild(more);
     more.querySelector("#load-more-btn").addEventListener("click", loadMore);
   } else if (noFilter && reachedEnd && allOccs.length > 0) {
@@ -630,10 +665,68 @@ function cardHtml(o, extraLoc = "") {
     </article>`;
 }
 
-// Fallback image: usa picsum.photos com seed determinístico, ou padrão por categoria.
+function emptyStateHtml(kind, title, body) {
+  const svgs = {
+    search: `<svg viewBox="0 0 200 160" width="180" height="140" aria-hidden="true">
+      <circle cx="80" cy="70" r="48" fill="none" stroke="var(--primary)" stroke-width="6" opacity="0.4"/>
+      <line x1="115" y1="105" x2="160" y2="150" stroke="var(--primary)" stroke-width="6" stroke-linecap="round" opacity="0.6"/>
+      <circle cx="80" cy="70" r="20" fill="var(--primary-soft)"/>
+      <text x="80" y="78" text-anchor="middle" font-size="22" font-weight="700" fill="var(--primary)">?</text>
+    </svg>`,
+    city: `<svg viewBox="0 0 220 160" width="200" height="150" aria-hidden="true">
+      <rect x="20" y="80" width="36" height="60" rx="3" fill="var(--primary)" opacity="0.85"/>
+      <rect x="64" y="50" width="44" height="90" rx="3" fill="var(--primary-dark, #047857)" opacity="0.9"/>
+      <rect x="116" y="70" width="38" height="70" rx="3" fill="var(--primary)" opacity="0.7"/>
+      <rect x="162" y="60" width="40" height="80" rx="3" fill="var(--primary-dark, #047857)" opacity="0.85"/>
+      <g fill="rgba(255,255,255,0.6)">
+        <rect x="26" y="90" width="6" height="8"/><rect x="40" y="90" width="6" height="8"/>
+        <rect x="26" y="105" width="6" height="8"/><rect x="40" y="105" width="6" height="8"/>
+        <rect x="74" y="62" width="6" height="8"/><rect x="88" y="62" width="6" height="8"/>
+        <rect x="74" y="82" width="6" height="8"/><rect x="88" y="82" width="6" height="8"/>
+        <rect x="74" y="102" width="6" height="8"/><rect x="88" y="102" width="6" height="8"/>
+      </g>
+      <circle cx="180" cy="30" r="10" fill="#fbbf24"/>
+    </svg>`,
+  };
+  return `<div class="empty-state">
+    ${svgs[kind] || ""}
+    <h3>${title}</h3>
+    <p>${body}</p>
+  </div>`;
+}
+
+// Fallback image: SVG inline determinístico, sem dependência externa. Usa
+// gradiente baseado no id e um ícone de pino. Loading instantâneo.
 function fallbackImage(o) {
-  const seed = `zelaai-${o.occId || o.occTitle || "city"}`;
-  return `https://picsum.photos/seed/${encodeURIComponent(seed)}/720/360`;
+  const id = Number(o.occId) || (o.occTitle?.length ?? 7);
+  const palette = [
+    ["#10b981", "#0f766e"], // verde
+    ["#f59e0b", "#b45309"], // âmbar
+    ["#3b82f6", "#1d4ed8"], // azul
+    ["#ec4899", "#be185d"], // rosa
+    ["#8b5cf6", "#6d28d9"], // roxo
+    ["#06b6d4", "#0e7490"], // ciano
+  ];
+  const [c1, c2] = palette[id % palette.length];
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 360">
+    <defs>
+      <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="${c1}"/>
+        <stop offset="1" stop-color="${c2}"/>
+      </linearGradient>
+      <pattern id="p" width="40" height="40" patternUnits="userSpaceOnUse">
+        <path d="M0 20 L40 20 M20 0 L20 40" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+      </pattern>
+    </defs>
+    <rect width="720" height="360" fill="url(#g)"/>
+    <rect width="720" height="360" fill="url(#p)"/>
+    <g transform="translate(360 160)" fill="white" opacity="0.92">
+      <path d="M0 -60 C-33 -60 -60 -33 -60 0 C-60 40 0 100 0 100 C0 100 60 40 60 0 C60 -33 33 -60 0 -60 Z" />
+      <circle cx="0" cy="0" r="22" fill="${c2}"/>
+    </g>
+    <text x="360" y="300" text-anchor="middle" font-family="system-ui,sans-serif" font-size="22" font-weight="600" fill="rgba(255,255,255,0.85)">ZelaAi</text>
+  </svg>`;
+  return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
 }
 
 function fmtDateTime(iso) {
@@ -663,6 +756,63 @@ const btnSave   = document.getElementById("btn-save");
 const selectCat = document.getElementById("oc-category");
 
 let currentCoords = null;
+let createMap = null;
+let createMarker = null;
+const coordsHint = document.getElementById("oc-coords-hint");
+
+function setCreateCoords(lat, lng, src = "") {
+  currentCoords = { lat, lng };
+  if (coordsHint) {
+    coordsHint.innerHTML = `📍 <b>${lat.toFixed(5)}, ${lng.toFixed(5)}</b> ${src ? `· ${src}` : ""}`;
+    coordsHint.classList.add("ok");
+  }
+  if (createMap && createMarker) {
+    createMarker.setLatLng([lat, lng]);
+    createMap.setView([lat, lng], 16);
+  }
+}
+
+function initCreateMap() {
+  if (createMap) return;
+  const mapDiv = document.getElementById("oc-map");
+  if (!mapDiv) return;
+  const start = currentCoords || { lat: -23.55, lng: -46.63 };
+  createMap = L.map(mapDiv, { zoomControl: true, attributionControl: false })
+    .setView([start.lat, start.lng], currentCoords ? 16 : 12);
+  L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
+    maxZoom: 19, subdomains: "abcd", crossOrigin: true,
+  }).addTo(createMap);
+  createMarker = L.marker([start.lat, start.lng], { draggable: true }).addTo(createMap);
+  createMarker.on("dragend", () => {
+    const { lat, lng } = createMarker.getLatLng();
+    setCreateCoords(lat, lng, "ajustado manualmente");
+  });
+  createMap.on("click", (e) => {
+    setCreateCoords(e.latlng.lat, e.latlng.lng, "via clique no mapa");
+  });
+  // botão minha-localização
+  const locBtn = document.getElementById("oc-locate");
+  if (locBtn) {
+    locBtn.addEventListener("click", () => {
+      if (!navigator.geolocation) { toast("geolocalização indisponível", "error"); return; }
+      locBtn.classList.add("loading");
+      navigator.geolocation.getCurrentPosition(
+        pos => {
+          locBtn.classList.remove("loading");
+          setCreateCoords(pos.coords.latitude, pos.coords.longitude, "GPS");
+        },
+        () => {
+          locBtn.classList.remove("loading");
+          toast("permissão de localização negada", "error");
+        },
+        { timeout: 6000, enableHighAccuracy: true }
+      );
+    });
+  }
+  // ajusta tamanho após o modal abrir (display:none -> flex)
+  requestAnimationFrame(() => createMap.invalidateSize());
+}
+
 fabNew.addEventListener("click", async () => {
   if (!isLogged) { window.location.href = "login.html"; return; }
   modal.classList.add("open");
@@ -679,13 +829,15 @@ fabNew.addEventListener("click", async () => {
       toast("erro ao carregar categorias", "error");
     }
   }
-  if (navigator.geolocation) {
+  if (navigator.geolocation && !currentCoords) {
     navigator.geolocation.getCurrentPosition(
-      pos => { currentCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude }; },
-      ()  => { currentCoords = null; },
+      pos => setCreateCoords(pos.coords.latitude, pos.coords.longitude, "GPS"),
+      ()  => {},
       { timeout: 4000 }
     );
   }
+  // inicializa o mini-mapa de criação (1x só)
+  setTimeout(initCreateMap, 50);
 });
 // auto-completa cidade/UF do CEP no modal de nova ocorrência (via ViaCEP)
 attachCepLookup(
@@ -753,6 +905,9 @@ function escapeHtml(s) {
 function escapeAttr(s) { return escapeHtml(s); }
 
 loadFeed();
+
+// Onboarding na 1ª visita (após o feed começar a carregar)
+setTimeout(() => startOnboarding(false), 600);
 
 // Atalhos de teclado
 mountKeyboardShortcuts({

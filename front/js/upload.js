@@ -47,17 +47,32 @@ export function attachUploader({ dropZone, fileInput, preview, urlInput, status 
     if (f) handleFile(f);
   });
 
-  function handleFile(file) {
+  async function handleFile(file) {
     if (!file.type.startsWith("image/")) {
       setStatus("Selecione um arquivo de imagem.", "err");
       return;
     }
-    if (file.size > 8 * 1024 * 1024) {
-      setStatus("Imagem muito grande (máx 8MB).", "err");
+    if (file.size > 20 * 1024 * 1024) {
+      setStatus("Imagem muito grande (máx 20MB).", "err");
       return;
     }
     showLocalPreview(file);
-    upload(file);
+    // Comprime client-side para economizar dados móveis. Mantém EXIF orientation
+    // implicitamente via <img> (browser corrige) e exporta em JPEG 0.82.
+    let toUpload = file;
+    if (file.size > 600 * 1024) {
+      setStatus("otimizando imagem…", "loading");
+      try {
+        toUpload = await compressImage(file, { maxDim: 1600, quality: 0.82 });
+        const saved = ((1 - toUpload.size / file.size) * 100).toFixed(0);
+        if (saved > 0) {
+          setStatus(`otimizada: ${formatBytes(file.size)} → ${formatBytes(toUpload.size)} (-${saved}%)`, "ok");
+        }
+      } catch {
+        toUpload = file; // se falhar, sobe original
+      }
+    }
+    upload(toUpload);
   }
 
   function showLocalPreview(file) {
@@ -130,4 +145,41 @@ function formatBytes(b) {
   if (b < 1024) return `${b}B`;
   if (b < 1024 * 1024) return `${(b / 1024).toFixed(0)}KB`;
   return `${(b / 1024 / 1024).toFixed(1)}MB`;
+}
+
+// Comprime imagem usando canvas. Resize proporcional para maxDim no maior lado.
+function compressImage(file, { maxDim = 1600, quality = 0.82 } = {}) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("read fail"));
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error("decode fail"));
+      img.onload = () => {
+        const { width: w, height: h } = img;
+        const scale = Math.min(1, maxDim / Math.max(w, h));
+        const tw = Math.round(w * scale);
+        const th = Math.round(h * scale);
+        const canvas = document.createElement("canvas");
+        canvas.width = tw;
+        canvas.height = th;
+        const ctx = canvas.getContext("2d");
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = "high";
+        ctx.drawImage(img, 0, 0, tw, th);
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) return reject(new Error("blob fail"));
+            const out = new File([blob], file.name.replace(/\.\w+$/, "") + ".jpg", { type: "image/jpeg" });
+            // se a compressão piorou, devolve original
+            resolve(out.size < file.size ? out : file);
+          },
+          "image/jpeg",
+          quality
+        );
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
 }

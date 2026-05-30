@@ -62,11 +62,11 @@ function render(o) {
        </div>`
     : "";
 
-  const photoUrl = o.occPhotoUrl || `https://picsum.photos/seed/zelaai-${o.occId}/1200/520`;
+  const photoUrl = o.occPhotoUrl || fallbackSvg(o.occId, o.occTitle);
   const createdFull = fmtDate(o.occCreatedAt);
   const createdAgo  = timeAgoLong(o.occCreatedAt);
   contentEl.innerHTML = `
-    <img class="detail-img" src="${escapeAttr(photoUrl)}" alt="" onerror="this.onerror=null;this.src='https://picsum.photos/seed/zelaai-${o.occId}/1200/520'" />
+    <img class="detail-img" src="${escapeAttr(photoUrl)}" alt="" data-zoom="${escapeAttr(o.occPhotoUrl ? o.occPhotoUrl : "")}" onerror="this.onerror=null;this.src='${escapeAttr(fallbackSvg(o.occId, o.occTitle))}'" />
     <span class="badge ${o.occStatus}">${labelStatus(o.occStatus)}</span>
     <h2 style="margin-top:8px;">${escapeHtml(o.occTitle)}</h2>
     <div class="detail-meta" title="${escapeAttr(createdFull)}">
@@ -180,6 +180,13 @@ function render(o) {
   contentEl.querySelectorAll(".copy-cep-btn").forEach(b => {
     b.addEventListener("click", () => copyToClipboard(b.dataset.cep));
   });
+
+  // Lightbox na foto (só se houver foto real, não fallback SVG)
+  const img = contentEl.querySelector(".detail-img");
+  if (img && img.dataset.zoom) {
+    img.classList.add("zoomable");
+    img.addEventListener("click", () => openLightbox(img.dataset.zoom, o.occTitle));
+  }
 
   loadComments();
 }
@@ -399,6 +406,33 @@ function toggleBtns(disabled) {
 function fmtDate(iso) {
   try { return new Date(iso).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" }); } catch { return iso; }
 }
+function openLightbox(url, title) {
+  const lb = document.createElement("div");
+  lb.className = "lightbox-bg";
+  lb.innerHTML = `
+    <button class="lightbox-close" aria-label="Fechar">×</button>
+    <img class="lightbox-img" src="${escapeAttr(url)}" alt="${escapeAttr(title || "")}" />
+    ${title ? `<div class="lightbox-caption">${escapeHtml(title)}</div>` : ""}
+  `;
+  document.body.appendChild(lb);
+  document.body.classList.add("lightbox-open");
+  const close = () => { lb.remove(); document.body.classList.remove("lightbox-open"); };
+  lb.addEventListener("click", (e) => { if (e.target === lb || e.target.classList.contains("lightbox-close")) close(); });
+  const esc = (e) => { if (e.key === "Escape") { close(); document.removeEventListener("keydown", esc); } };
+  document.addEventListener("keydown", esc);
+}
+
+function fallbackSvg(id, title) {
+  const n = Number(id) || (title?.length ?? 7);
+  const palette = [
+    ["#10b981","#0f766e"],["#f59e0b","#b45309"],["#3b82f6","#1d4ed8"],
+    ["#ec4899","#be185d"],["#8b5cf6","#6d28d9"],["#06b6d4","#0e7490"]
+  ];
+  const [c1,c2] = palette[n % palette.length];
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 520"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${c1}"/><stop offset="1" stop-color="${c2}"/></linearGradient></defs><rect width="1200" height="520" fill="url(#g)"/><g transform="translate(600 220)" fill="white" opacity="0.92"><path d="M0 -90 C-50 -90 -90 -50 -90 0 C-90 60 0 150 0 150 C0 150 90 60 90 0 C90 -50 50 -90 0 -90 Z"/><circle cx="0" cy="0" r="32" fill="${c2}"/></g><text x="600" y="430" text-anchor="middle" font-family="system-ui,sans-serif" font-size="32" font-weight="600" fill="rgba(255,255,255,0.85)">ZelaAi</text></svg>`;
+  return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+}
+
 function timeAgoLong(iso) {
   if (!iso) return "";
   const d = new Date(iso);

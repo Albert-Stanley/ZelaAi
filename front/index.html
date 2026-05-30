@@ -207,6 +207,17 @@
           <input id="oc-cep" type="text" inputmode="numeric" maxlength="9" placeholder="00000-000" />
           <div class="hint" id="oc-cep-hint">se vazio, usa o CEP do seu cadastro</div>
         </div>
+        <div class="field">
+          <label>Onde é o problema? <span class="hint-inline">arraste o pino para ajustar</span></label>
+          <div class="create-map-wrap">
+            <div id="oc-map"></div>
+            <button type="button" class="create-map-locate" id="oc-locate" title="Usar minha localização">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+              Minha localização
+            </button>
+          </div>
+          <div class="hint" id="oc-coords-hint">sem coordenadas — clique no mapa ou use sua localização</div>
+        </div>
         <div class="actions">
           <button type="button" class="btn secondary" id="btn-cancel">Cancelar</button>
           <button type="submit" class="btn" id="btn-save">Publicar</button>
