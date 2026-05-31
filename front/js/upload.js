@@ -21,9 +21,14 @@ export function cloudinaryConfigured() {
   return Boolean(META("cloudinary-cloud-name") && META("cloudinary-upload-preset"));
 }
 
+// Provider em uso: cloudinary (config'd) ou catbox (fallback anônimo).
+function pickProvider() {
+  return cloudinaryConfigured() ? "cloudinary" : "catbox";
+}
+
 export function attachUploader({ dropZone, fileInput, preview, urlInput, status }) {
-  if (!cloudinaryConfigured()) return false;
   if (!dropZone || !fileInput || !urlInput) return false;
+  const provider = pickProvider();
 
   dropZone.addEventListener("click", () => fileInput.click());
   dropZone.addEventListener("keydown", (e) => {
@@ -83,23 +88,33 @@ export function attachUploader({ dropZone, fileInput, preview, urlInput, status 
   }
 
   async function upload(file) {
-    const cloudName = META("cloudinary-cloud-name");
-    const preset    = META("cloudinary-upload-preset");
-    const url = `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`;
-    const form = new FormData();
-    form.append("file", file);
-    form.append("upload_preset", preset);
-
     setStatus(`enviando ${formatBytes(file.size)}…`, "loading");
     setProgress(0);
-
     try {
-      const result = await xhrUpload(url, form, (p) => setProgress(p));
-      urlInput.value = result.secure_url;
+      let resultUrl;
+      if (provider === "cloudinary") {
+        const cloudName = META("cloudinary-cloud-name");
+        const preset    = META("cloudinary-upload-preset");
+        const url = `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`;
+        const form = new FormData();
+        form.append("file", file);
+        form.append("upload_preset", preset);
+        const result = await xhrUpload(url, form, (p) => setProgress(p));
+        resultUrl = result.secure_url;
+      } else {
+        // Fallback anônimo: catbox.moe (sem auth, retorna URL em texto puro)
+        const form = new FormData();
+        form.append("reqtype", "fileupload");
+        form.append("fileToUpload", file);
+        const result = await xhrUploadText("https://catbox.moe/user/api.php", form, (p) => setProgress(p));
+        if (!/^https?:\/\//.test(result)) throw new Error(result || "resposta inválida");
+        resultUrl = result.trim();
+      }
+      urlInput.value = resultUrl;
       setStatus(`✓ ${file.name}`, "ok");
       setProgress(100);
       if (preview) {
-        preview.innerHTML = `<img src="${result.secure_url}" alt="" />`;
+        preview.innerHTML = `<img src="${resultUrl}" alt="" />`;
         preview.classList.add("has-image");
       }
     } catch (err) {
@@ -135,6 +150,23 @@ function xhrUpload(url, form, onProgress) {
         if (xhr.status >= 200 && xhr.status < 300 && j.secure_url) resolve(j);
         else reject(new Error(j.error?.message || `HTTP ${xhr.status}`));
       } catch (_) { reject(new Error("resposta inválida do Cloudinary")); }
+    };
+    xhr.onerror = () => reject(new Error("falha de rede"));
+    xhr.send(form);
+  });
+}
+
+// Variante para uploaders que retornam texto puro (ex.: catbox.moe).
+function xhrUploadText(url, form, onProgress) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", url);
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable && onProgress) onProgress((e.loaded / e.total) * 100);
+    };
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) resolve(xhr.responseText);
+      else reject(new Error(xhr.responseText || `HTTP ${xhr.status}`));
     };
     xhr.onerror = () => reject(new Error("falha de rede"));
     xhr.send(form);

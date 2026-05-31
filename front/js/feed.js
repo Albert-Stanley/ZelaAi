@@ -499,6 +499,10 @@ feedEl.addEventListener("click", async (e) => {
     if (act === "open" || act === "comments") return; // links nativos
     e.stopPropagation();
     e.preventDefault();
+    if (act === "toggle-comments") {
+      await toggleInlineComments(card, id, actionBtn);
+      return;
+    }
     if (act === "vote") {
       if (!isLogged) { window.location.href = "login.html"; return; }
       const wasVoted = actionBtn.classList.contains("voted");
@@ -535,6 +539,8 @@ feedEl.addEventListener("click", async (e) => {
       return;
     }
   }
+  // clicks dentro do painel de comentários inline não navegam
+  if (e.target.closest(".card-comments-panel")) return;
   const card = e.target.closest(".card");
   if (card && card.dataset.id) window.location.href = `occurrence.html?id=${card.dataset.id}`;
 });
@@ -648,10 +654,11 @@ function cardHtml(o, extraLoc = "") {
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
             <span class="card-action-count">${o.occVoteCount}</span>
           </button>
-          <a class="card-action" href="occurrence.html?id=${o.occId}#comments" data-act="comments" aria-label="Comentários">
+          <button type="button" class="card-action" data-act="toggle-comments" aria-label="Comentários" aria-expanded="false">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-            <span>Comentar</span>
-          </a>
+            <span>Comentários</span>
+            ${typeof o.commentCount === "number" ? `<span class="card-action-count">${o.commentCount}</span>` : ""}
+          </button>
           <button type="button" class="card-action" data-act="share" aria-label="Compartilhar">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
             <span>Compartilhar</span>
@@ -663,6 +670,113 @@ function cardHtml(o, extraLoc = "") {
         </div>
       </div>
     </article>`;
+}
+
+// ---------- Inline comments on card --------------------------------------
+
+async function toggleInlineComments(card, occId, btn) {
+  if (!card) return;
+  let panel = card.querySelector(".card-comments-panel");
+  if (panel) {
+    // toggle close
+    const isOpen = panel.classList.toggle("open");
+    btn.setAttribute("aria-expanded", isOpen ? "true" : "false");
+    btn.classList.toggle("active", isOpen);
+    return;
+  }
+  // criar painel
+  panel = document.createElement("div");
+  panel.className = "card-comments-panel open";
+  panel.innerHTML = `<div class="card-comments-loading">carregando comentários…</div>`;
+  card.querySelector(".card-body").appendChild(panel);
+  btn.setAttribute("aria-expanded", "true");
+  btn.classList.add("active");
+  try {
+    const list = await Api.listComments(occId, { page: 1, pageSize: 30 });
+    renderInlineComments(panel, occId, list);
+    // atualiza contador no botão
+    const occ = allOccs.find(x => x.occId === occId);
+    if (occ) occ.commentCount = list.length;
+    let countEl = btn.querySelector(".card-action-count");
+    if (!countEl) {
+      countEl = document.createElement("span");
+      countEl.className = "card-action-count";
+      btn.appendChild(countEl);
+    }
+    countEl.textContent = list.length;
+  } catch (err) {
+    panel.innerHTML = `<div class="card-comments-empty">erro: ${escapeHtml(err.message || "falha ao carregar")}</div>`;
+  }
+}
+
+function renderInlineComments(panel, occId, list) {
+  const composer = isLogged
+    ? `<form class="card-comment-form" data-occ="${occId}">
+         <textarea required maxlength="1000" placeholder="Comentar como @${escapeHtml(user.userUsername)}…" rows="2"></textarea>
+         <button type="submit" class="btn small">Publicar</button>
+       </form>`
+    : `<div class="card-comments-login"><a href="login.html">Entre</a> para comentar.</div>`;
+
+  const items = list.length === 0
+    ? `<div class="card-comments-empty">Seja a primeira voz. Comente aí 👇</div>`
+    : list.map(c => `
+        <article class="card-comment">
+          <div class="card-comment-avatar">${escapeHtml((c.commentUsername[0] || "?").toUpperCase())}</div>
+          <div class="card-comment-main">
+            <div class="card-comment-head">
+              <strong>@${escapeHtml(c.commentUsername)}</strong>
+              <span>${cmTimeAgo(c.commentCreatedAt)}</span>
+            </div>
+            <div class="card-comment-body">${escapeHtml(c.commentBody)}</div>
+          </div>
+        </article>
+      `).join("");
+
+  panel.innerHTML = `
+    <div class="card-comments-head">
+      <span>${list.length} ${list.length === 1 ? "comentário" : "comentários"}</span>
+      <a href="occurrence.html?id=${occId}#comments" class="card-comments-link">abrir tudo →</a>
+    </div>
+    <div class="card-comments-list">${items}</div>
+    ${composer}
+  `;
+
+  const form = panel.querySelector(".card-comment-form");
+  if (form) form.addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    const ta = form.querySelector("textarea");
+    const body = ta.value.trim();
+    if (!body) return;
+    const submitBtn = form.querySelector("button");
+    submitBtn.disabled = true;
+    submitBtn.textContent = "…";
+    try {
+      await Api.createComment(occId, body, Auth.token());
+      const fresh = await Api.listComments(occId, { page: 1, pageSize: 30 });
+      renderInlineComments(panel, occId, fresh);
+      const card = panel.closest(".card");
+      const cnt = card?.querySelector('.card-action[data-act="toggle-comments"] .card-action-count');
+      if (cnt) cnt.textContent = fresh.length;
+      const occ = allOccs.find(x => x.occId === occId);
+      if (occ) occ.commentCount = fresh.length;
+      toast("comentário publicado", "success");
+    } catch (err) {
+      if (err.status === 401) { Auth.logout(); window.location.href = "login.html"; return; }
+      toast(err.message || "erro ao comentar", "error");
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Publicar";
+    }
+  });
+}
+
+function cmTimeAgo(iso) {
+  const d = new Date(iso);
+  const diff = (Date.now() - d.getTime()) / 1000;
+  if (diff < 60) return "agora";
+  if (diff < 3600) return `há ${Math.floor(diff/60)}min`;
+  if (diff < 86400) return `há ${Math.floor(diff/3600)}h`;
+  if (diff < 604800) return `há ${Math.floor(diff/86400)}d`;
+  return d.toLocaleDateString("pt-BR");
 }
 
 function emptyStateHtml(kind, title, body) {

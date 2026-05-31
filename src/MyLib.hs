@@ -78,7 +78,7 @@ startApp = withDbPool $ \pool -> do
     (True, []) ->
       fail "FATAL: production requires CORS_ALLOWED_ORIGINS to be set (no wildcard)."
     (_, []) ->
-      putStrLn "CORS: open (no origin restriction) — dev only."
+      putStrLn "CORS: open (no origin restriction) - dev only."
     (_, xs) ->
       putStrLn $ "CORS: restricted to " ++ show (map BS.unpack xs)
   -- Rate limiter: aplicado em endpoints sensíveis (auth + write).

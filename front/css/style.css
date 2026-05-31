@@ -1813,21 +1813,43 @@ body.map-fs-open { overflow: hidden; }
 /* =============================== Upload zone (Cloudinary) ================== */
 
 .upload-zone {
-  border: 1.5px dashed var(--border-strong);
+  border: 2px dashed var(--primary);
   border-radius: var(--radius);
-  padding: 14px;
-  background: var(--bg);
+  padding: 18px 16px;
+  background: var(--primary-soft);
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 14px;
   transition: all var(--t-fast);
   outline: none;
+  min-height: 88px;
+  position: relative;
+}
+.upload-zone::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius);
+  background: linear-gradient(135deg, var(--primary-soft) 0%, transparent 60%);
+  pointer-events: none;
+  opacity: 0.6;
+}
+[data-theme="dark"] .upload-zone {
+  background: rgba(16, 185, 129, 0.08);
+  border-color: var(--primary);
 }
 .upload-zone:hover,
 .upload-zone:focus-visible {
-  border-color: var(--primary);
-  background: var(--primary-soft);
+  border-color: var(--primary-dark, #047857);
+  background: rgba(16, 185, 129, 0.18);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.15);
+}
+[data-theme="dark"] .upload-zone:hover,
+[data-theme="dark"] .upload-zone:focus-visible {
+  background: rgba(16, 185, 129, 0.16);
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.25);
 }
 .upload-zone.drag-active {
   border-color: var(--primary);
@@ -1850,13 +1872,25 @@ body.map-fs-open { overflow: hidden; }
   display: block;
   color: var(--text);
   font-weight: 700;
-  font-size: 0.92rem;
+  font-size: 0.95rem;
 }
 .upload-cta small {
   display: block;
-  color: var(--text-muted);
-  font-size: 0.74rem;
-  margin-top: 1px;
+  color: var(--text-soft);
+  font-size: 0.76rem;
+  margin-top: 2px;
+}
+.upload-cta > svg {
+  width: 28px;
+  height: 28px;
+  padding: 6px;
+  background: var(--surface);
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
+[data-theme="dark"] .upload-cta > svg {
+  background: var(--bg-deep);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.4);
 }
 .upload-preview {
   width: 56px;
@@ -2597,6 +2631,133 @@ kbd {
   padding: 16px 0 8px;
   letter-spacing: 0.04em;
 }
+
+/* =============================== Inline comments no card ================ */
+
+.card .card-action.active {
+  color: var(--primary);
+  background: var(--primary-soft);
+}
+
+.card-comments-panel {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  display: none;
+  animation: cardCommentsIn 0.2s ease-out;
+}
+.card-comments-panel.open { display: block; }
+@keyframes cardCommentsIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.card-comments-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+.card-comments-link {
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 600;
+}
+.card-comments-link:hover { text-decoration: underline; }
+
+.card-comments-loading,
+.card-comments-empty {
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  padding: 14px 8px;
+}
+
+.card-comments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 10px;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.card-comment {
+  display: flex;
+  gap: 8px;
+  background: var(--bg-deep);
+  border-radius: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+}
+.card-comment-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: white;
+  font-weight: 700;
+  font-size: 0.78rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.card-comment-main { flex: 1; min-width: 0; }
+.card-comment-head {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  font-size: 0.76rem;
+  margin-bottom: 2px;
+}
+.card-comment-head strong { color: var(--text); font-weight: 700; }
+.card-comment-head span { color: var(--text-muted); }
+.card-comment-body {
+  font-size: 0.84rem;
+  color: var(--text);
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.45;
+}
+
+.card-comment-form {
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+}
+.card-comment-form textarea {
+  flex: 1;
+  resize: vertical;
+  min-height: 38px;
+  max-height: 120px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font: inherit;
+  font-size: 0.84rem;
+  background: var(--surface);
+  color: var(--text);
+}
+.card-comment-form textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-soft);
+}
+.card-comment-form .btn { padding: 8px 14px; align-self: stretch; }
+
+.card-comments-login {
+  text-align: center;
+  font-size: 0.84rem;
+  color: var(--text-muted);
+  padding: 10px;
+  background: var(--bg-deep);
+  border-radius: 8px;
+}
+.card-comments-login a { color: var(--primary); font-weight: 600; }
 
 /* =============================== Mini-mapa no modal de criação =========== */
 
