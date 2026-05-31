@@ -5,6 +5,7 @@ import { attachCepLookup } from "./cep.js";
 import { attachUploader, cloudinaryConfigured } from "./upload.js";
 import { mountKeyboardShortcuts } from "./keys.js";
 import { startOnboarding } from "./onboarding.js";
+import { escapeHtml, escapeAttr, labelStatus, statusColor, fmtDateTime, timeAgo, fallbackImage as fallbackImageUtil } from "./util.js";
 
 // Feed é PÚBLICO — não exige login. Só esconde o FAB se não tiver sessão.
 const isLogged = Auth.isLogged();
@@ -331,12 +332,6 @@ function drawMarkers(occs) {
   }
   if (bounds.length === 1) map.setView(bounds[0], 14);
   else if (bounds.length > 1) map.fitBounds(bounds, { padding: [30, 30], maxZoom: 15 });
-}
-
-function statusColor(s) {
-  return s === "resolved" ? "#0f9d58"
-       : s === "in_progress" ? "#3b82f6"
-       : "#f59e0b";
 }
 
 function scheduleMarkerDraw(occs) {
@@ -809,56 +804,9 @@ function emptyStateHtml(kind, title, body) {
   </div>`;
 }
 
-// Fallback image: SVG inline determinístico, sem dependência externa. Usa
-// gradiente baseado no id e um ícone de pino. Loading instantâneo.
+// Wrapper que adapta a util pra receber o objeto de ocorrência inteiro.
 function fallbackImage(o) {
-  const id = Number(o.occId) || (o.occTitle?.length ?? 7);
-  const palette = [
-    ["#10b981", "#0f766e"], // verde
-    ["#f59e0b", "#b45309"], // âmbar
-    ["#3b82f6", "#1d4ed8"], // azul
-    ["#ec4899", "#be185d"], // rosa
-    ["#8b5cf6", "#6d28d9"], // roxo
-    ["#06b6d4", "#0e7490"], // ciano
-  ];
-  const [c1, c2] = palette[id % palette.length];
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 360">
-    <defs>
-      <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0" stop-color="${c1}"/>
-        <stop offset="1" stop-color="${c2}"/>
-      </linearGradient>
-      <pattern id="p" width="40" height="40" patternUnits="userSpaceOnUse">
-        <path d="M0 20 L40 20 M20 0 L20 40" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
-      </pattern>
-    </defs>
-    <rect width="720" height="360" fill="url(#g)"/>
-    <rect width="720" height="360" fill="url(#p)"/>
-    <g transform="translate(360 160)" fill="white" opacity="0.92">
-      <path d="M0 -60 C-33 -60 -60 -33 -60 0 C-60 40 0 100 0 100 C0 100 60 40 60 0 C60 -33 33 -60 0 -60 Z" />
-      <circle cx="0" cy="0" r="22" fill="${c2}"/>
-    </g>
-    <text x="360" y="300" text-anchor="middle" font-family="system-ui,sans-serif" font-size="22" font-weight="600" fill="rgba(255,255,255,0.85)">ZelaAi</text>
-  </svg>`;
-  return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
-}
-
-function fmtDateTime(iso) {
-  try {
-    return new Date(iso).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
-  } catch { return ""; }
-}
-function timeAgo(iso) {
-  const d = new Date(iso);
-  const diff = (Date.now() - d.getTime()) / 1000;
-  if (diff < 60) return "agora";
-  if (diff < 3600) return `${Math.floor(diff/60)} min`;
-  if (diff < 86400) return `${Math.floor(diff/3600)} h`;
-  if (diff < 604800) return `${Math.floor(diff/86400)} d`;
-  return d.toLocaleDateString("pt-BR");
-}
-function labelStatus(s) {
-  return ({ open: "Aberto", in_progress: "Em andamento", resolved: "Resolvido" }[s] || s);
+  return fallbackImageUtil(o.occId || o.occTitle);
 }
 
 // ------------------------- Modal de criação --------------------------------
@@ -1010,13 +958,6 @@ formNew.addEventListener("submit", async (e) => {
     btnSave.textContent = "Publicar";
   }
 });
-
-function escapeHtml(s) {
-  return String(s ?? "").replace(/[&<>"']/g, ch => ({
-    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
-  }[ch]));
-}
-function escapeAttr(s) { return escapeHtml(s); }
 
 loadFeed();
 

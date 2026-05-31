@@ -1,6 +1,7 @@
 import { Api } from "./api.js";
 import { Auth } from "./auth.js";
 import { Theme } from "./theme.js";
+import { escapeHtml, fmtDate } from "./util.js";
 
 Theme.mountToggle(document.querySelector(".header-actions"));
 
@@ -305,12 +306,6 @@ function fmtDate(iso) {
   try {
     return new Date(iso).toLocaleDateString("pt-BR", { month: "short", year: "numeric" });
   } catch { return iso; }
-}
-
-function escapeHtml(s) {
-  return String(s ?? "").replace(/[&<>"']/g, ch => ({
-    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
-  }[ch]));
 }
 
 load();

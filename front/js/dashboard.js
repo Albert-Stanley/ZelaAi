@@ -7,6 +7,7 @@
 import { Api } from "./api.js";
 import { Auth } from "./auth.js";
 import { Theme } from "./theme.js";
+import { escapeHtml, labelStatus } from "./util.js";
 
 const isLogged = Auth.isLogged();
 const user     = Auth.user();
@@ -54,12 +55,6 @@ const charts = {};
 
 const labelStatus = s => ({ open: "Aberto", in_progress: "Em andamento", resolved: "Resolvido" }[s] || s);
 const fmtMonth = (d) => d.toLocaleDateString("pt-BR", { month: "short", year: "2-digit" });
-
-function escapeHtml(s) {
-  return String(s ?? "").replace(/[&<>"']/g, ch => ({
-    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
-  }[ch]));
-}
 
 function groupBy(arr, keyFn) {
   const m = new Map();

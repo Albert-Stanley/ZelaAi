@@ -15,6 +15,7 @@
     onScroll();
   }
   const year = new Date().getFullYear();
+  const apiBase = document.querySelector('meta[name="api-base"]')?.content || "";
   const footer = document.createElement("footer");
   footer.className = "site-footer";
   footer.innerHTML = `
@@ -29,6 +30,9 @@
         <a href="mandates.html">Gestões</a>
         <a href="my.html">Minhas</a>
         <a href="login.html">Entrar</a>
+        <span class="site-footer-sep">·</span>
+        <a href="${apiBase}/docs" target="_blank" rel="noopener">📖 Docs</a>
+        <a href="${apiBase}/docs-api/" target="_blank" rel="noopener">🔌 OpenAPI</a>
       </nav>
       <div class="site-footer-tag">
         <span class="health-badge" id="health-badge" title="Status do serviço">
@@ -42,7 +46,6 @@
   document.body.appendChild(footer);
 
   // Health check — pinga GET /health no backend Haskell e mostra status.
-  const apiBase = document.querySelector('meta[name="api-base"]')?.content || "";
   const url = (apiBase || "") + "/health";
   const t0 = performance.now();
   fetch(url, { cache: "no-store" })

@@ -2,6 +2,7 @@ import { Api } from "./api.js";
 import { Auth, toast } from "./auth.js";
 import { Theme } from "./theme.js";
 import { mountKeyboardShortcuts } from "./keys.js";
+import { escapeHtml, escapeAttr, labelStatus, fmtDate, timeAgo } from "./util.js";
 
 Theme.mountToggle(document.querySelector(".header-actions"));
 
@@ -342,16 +343,6 @@ async function deleteComment(cid) {
   }
 }
 
-function timeAgo(iso) {
-  const d = new Date(iso);
-  const diff = (Date.now() - d.getTime()) / 1000;
-  if (diff < 60) return "agora";
-  if (diff < 3600) return `há ${Math.floor(diff/60)} min`;
-  if (diff < 86400) return `há ${Math.floor(diff/3600)}h`;
-  if (diff < 604800) return `há ${Math.floor(diff/86400)}d`;
-  return d.toLocaleDateString("pt-BR");
-}
-
 async function doVote() {
   toggleBtns(true);
   try {
@@ -403,9 +394,6 @@ function toggleBtns(disabled) {
   if (b) b.disabled = disabled;
 }
 
-function fmtDate(iso) {
-  try { return new Date(iso).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" }); } catch { return iso; }
-}
 function openLightbox(url, title) {
   const lb = document.createElement("div");
   lb.className = "lightbox-bg";
@@ -443,15 +431,6 @@ function timeAgoLong(iso) {
   if (diff < 604800) return `há ${Math.floor(diff/86400)} d`;
   return `em ${d.toLocaleDateString("pt-BR")}`;
 }
-function labelStatus(s) {
-  return ({ open: "Aberto", in_progress: "Em andamento", resolved: "Resolvido" }[s] || s);
-}
-function escapeHtml(s) {
-  return String(s ?? "").replace(/[&<>"']/g, ch => ({
-    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
-  }[ch]));
-}
-function escapeAttr(s) { return escapeHtml(s); }
 
 load();
 

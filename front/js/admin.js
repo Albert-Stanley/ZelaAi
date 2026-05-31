@@ -5,6 +5,7 @@
 import { Api } from "./api.js";
 import { Auth, toast } from "./auth.js";
 import { Theme } from "./theme.js";
+import { escapeHtml } from "./util.js";
 
 Theme.mountToggle(document.querySelector(".header-actions"));
 
@@ -105,8 +106,3 @@ async function toggleRole(uid, newRole) {
   }
 }
 
-function escapeHtml(s) {
-  return String(s ?? "").replace(/[&<>"']/g, ch => ({
-    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
-  }[ch]));
-}

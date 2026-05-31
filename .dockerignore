@@ -26,10 +26,13 @@ cabal.sandbox.config
 *.tmp
 /tmp/
 
-# docs (não precisam ir pra imagem)
+# docs — README.md PRECISA ir pro build context, pois é embutido no
+# binário Haskell via Template Haskell (Presentation.Docs) para servir
+# o endpoint /docs. DOCS.md e CHANGELOG.md ficam de fora pra reduzir
+# o tamanho da imagem (são pesados).
 DOCS.md
 CHANGELOG.md
-README.md
+# README.md  -- mantido no build context
 
 # front (servido pelo container nginx, não vai pro backend)
 front/

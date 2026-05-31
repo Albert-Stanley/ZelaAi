@@ -1,6 +1,7 @@
 import { Api } from "./api.js";
 import { Auth, toast } from "./auth.js";
 import { Theme } from "./theme.js";
+import { escapeHtml, escapeAttr, labelStatus } from "./util.js";
 
 Theme.mountToggle(document.querySelector(".header-actions"));
 
@@ -169,15 +170,5 @@ function cardHtml(o) {
       </div>
     </article>`;
 }
-
-function labelStatus(s) {
-  return ({ open: "Aberto", in_progress: "Em andamento", resolved: "Resolvido" }[s] || s);
-}
-function escapeHtml(s) {
-  return String(s ?? "").replace(/[&<>"']/g, ch => ({
-    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
-  }[ch]));
-}
-function escapeAttr(s) { return escapeHtml(s); }
 
 load();

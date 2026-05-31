@@ -21,6 +21,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get update && apt-get install -y --no-install-recommends \
       libpq-dev \
       zlib1g-dev \
+      pkg-config \
+      liblzma-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # copia o cabal/project primeiro pra aproveitar o cache de deps
@@ -41,6 +43,7 @@ FROM debian:bookworm-slim
 RUN apt-get update && apt-get install -y --no-install-recommends \
       libpq5 \
       libgmp10 \
+      liblzma5 \
       ca-certificates \
       netcat-openbsd \
     && rm -rf /var/lib/apt/lists/*

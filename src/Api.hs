@@ -1,12 +1,16 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
 
 -- | Definicao do tipo da API e do server. MyLib.hs apenas chama startApp.
 module Api
   ( API
+  , FullAPI
   , app
   , server
   ) where
@@ -20,6 +24,8 @@ import Data.Int (Int64)
 import Data.Time.Clock (getCurrentTime)
 import GHC.Generics (Generic)
 import Servant
+import Servant.Swagger (toSwagger)
+import Data.Swagger (ToSchema)
 import Database.Persist.Sql (ConnectionPool, Single, SqlBackend, rawSql, runSqlPool)
 
 import qualified Dto.UserDto as D
@@ -30,9 +36,11 @@ import qualified Dto.MandateDto as M
 import qualified Dto.CommentDto as Cm
 import qualified UseCase.AdminCase as AC
 import qualified Presentation.Controllers as Ctrl
+import qualified Presentation.Docs as Docs
 
 -- Health
 data Hello = Hello { mensagem :: String } deriving (Generic, ToJSON)
+instance ToSchema Hello
 
 helloHandler :: Handler Hello
 helloHandler = return (Hello "ZelaAi no ar")
@@ -46,6 +54,7 @@ data HealthStatus = HealthStatus
   , version :: String   -- semver
   , time    :: String   -- ISO 8601
   } deriving (Generic, ToJSON)
+instance ToSchema HealthStatus
 
 healthHandler :: ConnectionPool -> Handler HealthStatus
 healthHandler pool = do
@@ -224,5 +233,15 @@ server pool =
   :<|> Ctrl.adminStatsController pool
   :<|> (\oid auth     -> Ctrl.adminDeleteOccurrenceController pool auth oid)
 
+-- | API completa: a API original + endpoints de documentação (Docs + Swagger).
+type FullAPI = API :<|> Docs.DocsAPI
+
+fullServer :: ConnectionPool -> Server FullAPI
+fullServer pool = server pool :<|> Docs.docsServer swaggerSpec
+  where
+    -- Spec OpenAPI gerado automaticamente a partir do tipo 'API' via
+    -- servant-swagger. Os ToSchema dos DTOs vivem em Presentation.Docs.
+    swaggerSpec = Docs.makeSwaggerInfo (toSwagger (Proxy :: Proxy API))
+
 app :: ConnectionPool -> Application
-app pool = serve (Proxy :: Proxy API) (server pool)
+app pool = serve (Proxy :: Proxy FullAPI) (fullServer pool)

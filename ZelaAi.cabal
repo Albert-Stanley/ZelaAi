@@ -10,7 +10,7 @@ maintainer:         albertstanley927@gmail.com
 -- copyright:
 build-type:         Simple
 extra-doc-files:    CHANGELOG.md
--- extra-source-files:
+extra-source-files: README.md
 
 common warnings
     ghc-options: -Wall
@@ -47,6 +47,7 @@ library
                     , Presentation.Responses
                     , Presentation.Errors
                     , Presentation.RateLimit
+                    , Presentation.Docs
                     , InterfaceAdapters.Libs
                     , InterfaceAdapters.Apis
                     , InterfaceAdapters.Logs
@@ -74,6 +75,14 @@ library
                     , http-client
                     , http-client-tls
                     , http-types
+                    , servant-swagger
+                    , servant-swagger-ui
+                    , swagger2
+                    , lens
+                    , file-embed
+                    , insert-ordered-containers
+                    , unordered-containers
+                    , http-media
     hs-source-dirs:   src
     default-language: GHC2021
 

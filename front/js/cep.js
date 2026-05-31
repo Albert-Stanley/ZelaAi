@@ -1,3 +1,4 @@
+import { escapeHtml } from "./util.js";
 // =============================================================================
 // ZelaAi — utilitário ViaCEP: máscara + autocomplete de cidade/UF
 // Uso:  attachCepLookup(inputEl, hintEl, { onResult })
@@ -63,8 +64,3 @@ function apply(result, hint, onResult) {
   if (onResult) onResult(result, null);
 }
 
-function escapeHtml(s) {
-  return String(s ?? "").replace(/[&<>"']/g, ch => ({
-    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
-  }[ch]));
-}
