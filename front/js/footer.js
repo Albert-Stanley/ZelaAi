@@ -1,4 +1,18 @@
 // Footer global injetado em todas as páginas. Inclui botão "voltar ao topo".
+
+// Mesma lógica do api.js — sem importar pra evitar acoplamento de módulos
+// (footer.js é script clássico, não module).
+function resolveApiBaseForFooter() {
+  const meta = document.querySelector('meta[name="api-base"]');
+  if (meta && meta.content) return meta.content.replace(/\/$/, "");
+  if (typeof window.ZELAAI_API_BASE === "string" && window.ZELAAI_API_BASE)
+    return window.ZELAAI_API_BASE.replace(/\/$/, "");
+  const { protocol, hostname } = window.location;
+  if (hostname === "localhost" || hostname === "127.0.0.1")
+    return `${protocol}//${hostname}:5050`;
+  return `${protocol}//${hostname}`;
+}
+
 (function () {
   if (document.querySelector(".site-footer")) return;
   // Botão voltar-ao-topo
@@ -15,7 +29,9 @@
     onScroll();
   }
   const year = new Date().getFullYear();
-  const apiBase = document.querySelector('meta[name="api-base"]')?.content || "";
+  // Resolve a URL do backend Haskell. Em dev (localhost), cai pro :5050
+  // — sem isso, links absolutos como /docs vão pro nginx (8080) e 404am.
+  const apiBase = resolveApiBaseForFooter();
   const footer = document.createElement("footer");
   footer.className = "site-footer";
   footer.innerHTML = `
@@ -32,7 +48,6 @@
         <a href="login.html">Entrar</a>
         <span class="site-footer-sep">·</span>
         <a href="${apiBase}/docs" target="_blank" rel="noopener">📖 Docs</a>
-        <a href="${apiBase}/docs-api/" target="_blank" rel="noopener">🔌 OpenAPI</a>
       </nav>
       <div class="site-footer-tag">
         <span class="health-badge" id="health-badge" title="Status do serviço">

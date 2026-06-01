@@ -69,6 +69,7 @@ startApp = withDbPool $ \pool -> do
   runMigrations pool migrateAll
   CC.seedDefaultCategories pool
   Seed.seedDemoIfEmpty pool
+  Seed.seedTopupIfFew pool
   rawOrigins <- lookupEnv "CORS_ALLOWED_ORIGINS"
   let allowed = case rawOrigins of
         Just s | not (null s) && s /= "*" -> parseOrigins s

@@ -75,13 +75,7 @@ library
                     , http-client
                     , http-client-tls
                     , http-types
-                    , servant-swagger
-                    , servant-swagger-ui
-                    , swagger2
-                    , lens
                     , file-embed
-                    , insert-ordered-containers
-                    , unordered-containers
                     , http-media
     hs-source-dirs:   src
     default-language: GHC2021

@@ -1,29 +1,20 @@
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeOperators #-}
-{-# OPTIONS_GHC -Wno-orphans #-}
 
--- | Documentação viva da aplicação:
+-- | Documentação viva da aplicação: renderiza o README do projeto como
+-- HTML no endpoint /docs.
 --
---   * 'docsHomeHandler'    — renderiza o README do projeto como HTML (/docs).
---   * 'swaggerSchemaUIServer' — Swagger UI interativa em /docs-api.
---
--- O conversor de markdown é minimalista (sem deps de parser externo) e
--- cobre o que aparece no README: headings, parágrafos, listas, code
--- fences/inline, links, blockquote, **bold** e *italic*.
---
--- O 'Swagger' do spec é gerado em 'Api.hs' (que tem acesso ao tipo da API
--- principal) e passado para 'docsServer' para evitar ciclo de imports.
+-- O conversor de Markdown é feito a mão (zero deps de parser externo)
+-- e cobre headings, parágrafos, listas, code fences/inline, blockquote,
+-- **bold**, *italic*, links, tabelas e pass-through de HTML embutido.
 module Presentation.Docs
   ( DocsAPI
   , docsServer
   , HTMLContent
-  , makeSwaggerInfo
   ) where
 
 import qualified Data.ByteString as BS
@@ -31,20 +22,8 @@ import qualified Data.ByteString.Lazy as LBS
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
 import Data.FileEmbed (embedFile, makeRelativeToProject)
-import Data.Swagger (Swagger, ToSchema)
-import qualified Data.Swagger as Sw
-import Control.Lens ((&), (.~), (?~))
 import Servant
-import Servant.Swagger.UI (SwaggerSchemaUI, swaggerSchemaUIServer)
 import Network.HTTP.Media ((//), (/:))
-
-import qualified Dto.UserDto as DU
-import qualified Dto.CategoryDto as DC
-import qualified Dto.OccurrenceDto as DO
-import qualified Dto.VoteDto as DV
-import qualified Dto.MandateDto as DM
-import qualified Dto.CommentDto as DCm
-import qualified UseCase.AdminCase as AC
 
 -- ---------------------------------------------------------------- Content type
 
@@ -70,23 +49,10 @@ readmeText = TE.decodeUtf8 readmeBytes
 
 -- ---------------------------------------------------------------- API & server
 
-type DocsAPI =
-       "docs" :> Get '[HTMLContent] LBS.ByteString
-  :<|> SwaggerSchemaUI "docs-api" "openapi.json"
+type DocsAPI = "docs" :> Get '[HTMLContent] LBS.ByteString
 
-docsServer :: Swagger -> Server DocsAPI
-docsServer spec = docsHomeHandler :<|> swaggerSchemaUIServer spec
-
--- | Aplica metadados (título, versão, descrição, licença) ao spec cru.
--- Chamado em Api.hs depois de 'toSwagger'.
-makeSwaggerInfo :: Swagger -> Swagger
-makeSwaggerInfo s =
-  s & Sw.info . Sw.title       .~ "ZelaAi API"
-    & Sw.info . Sw.version     .~ "0.1.0"
-    & Sw.info . Sw.description ?~ desc
-    & Sw.info . Sw.license     ?~ ("MIT" & Sw.url ?~ Sw.URL "https://opensource.org/license/mit/")
-  where
-    desc = "API publica do ZelaAi. Plataforma colaborativa de zeladoria publica - o 'Reclame Aqui' da infraestrutura urbana, com ranking comunitario e avaliacao das gestoes."
+docsServer :: Server DocsAPI
+docsServer = docsHomeHandler
 
 -- ---------------------------------------------------------------- Handlers
 
@@ -118,7 +84,6 @@ docsHeader = T.concat
   , "<nav class=\"docs-nav\">"
   , "<a href=\"/\">App</a>"
   , "<a href=\"/docs\" class=\"active\">README</a>"
-  , "<a href=\"/docs-api/\">OpenAPI</a>"
   , "<a href=\"/health\">Health</a>"
   , "</nav></header>"
   ]
@@ -179,16 +144,18 @@ data PState = PState
   , psList   :: Maybe Char    -- 'u' (ul), 'o' (ol), Nothing (fora)
   , psCode   :: Maybe T.Text  -- Just lang dentro de ``` ... ```
   , psBlockq :: [T.Text]      -- linhas dentro de blockquote
+  , psTable  :: [T.Text]      -- linhas | a | b | c | acumuladas
+  , psHtml   :: Bool          -- True dentro de bloco HTML pass-through
   }
 
 empty0 :: PState
-empty0 = PState [] [] Nothing Nothing []
+empty0 = PState [] [] Nothing Nothing [] [] False
 
 renderBlocks :: [T.Text] -> [T.Text]
 renderBlocks ls = reverse (psOut (flushAll (foldl step empty0 ls)))
 
 flushAll :: PState -> PState
-flushAll = flushPara . flushList . flushBlockq
+flushAll = flushPara . flushList . flushBlockq . flushTable
 
 flushList :: PState -> PState
 flushList s = case psList s of
@@ -210,6 +177,51 @@ flushPara s
       let txt = T.intercalate " " (reverse (psPara s))
       in  s { psPara = [], psOut = T.concat ["<p>", inline txt, "</p>"] : psOut s }
 
+-- | Acumula linhas começando/terminando com '|' e produz <table>.
+-- Lida com a linha separadora |---|---| (ignorada) e marca a primeira
+-- linha como <thead>, restante como <tbody>.
+flushTable :: PState -> PState
+flushTable s
+  | null (psTable s) = s
+  | otherwise =
+      let rows0   = reverse (psTable s)
+          rows    = filter (not . isAlignRow) rows0
+          parseRow r = map T.strip (T.splitOn "|" (T.dropAround (== '|') (T.strip r)))
+          cells   = map parseRow rows
+          (header, body) = case cells of
+            (h:rs) -> (h, rs)
+            []     -> ([], [])
+          thHtml = T.concat ["<thead><tr>", T.concat (map (\c -> T.concat ["<th>", inline c, "</th>"]) header), "</tr></thead>"]
+          tdHtml = T.concat ["<tbody>", T.concat (map renderRow body), "</tbody>"]
+          renderRow row = T.concat ["<tr>", T.concat (map (\c -> T.concat ["<td>", inline c, "</td>"]) row), "</tr>"]
+          tbl    = T.concat ["<table>", if null header then "" else thHtml, tdHtml, "</table>"]
+      in s { psTable = [], psOut = tbl : psOut s }
+
+isTableLine :: T.Text -> Bool
+isTableLine raw =
+  let t = T.strip raw
+  in T.isPrefixOf "|" t && T.isSuffixOf "|" t && T.length t >= 3
+
+isAlignRow :: T.Text -> Bool
+isAlignRow raw =
+  let t = T.strip (T.dropAround (== '|') (T.strip raw))
+      cells = T.splitOn "|" t
+  in not (null cells)
+     && all (\c -> let c' = T.strip c
+                   in not (T.null c') && T.all (`elem` ("-: " :: String)) c') cells
+
+-- | Linhas que parecem HTML de bloco (começam com '<' e algum nome de tag).
+-- Estas passam verbatim para a saída sem processamento Markdown.
+isHtmlOpen :: T.Text -> Bool
+isHtmlOpen raw =
+  let t = T.stripStart raw
+  in T.isPrefixOf "<" t
+     && not (T.isPrefixOf "<!" t)         -- comentários tratados separadamente
+     && T.length t >= 2
+     -- evita confundir com texto que tem "<3" etc: precisa de [a-zA-Z/]
+     && let c = T.head (T.drop 1 t)
+        in (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '/' || c == '!'
+
 step :: PState -> T.Text -> PState
 step st raw
   -- dentro de code fence: ` ``` ` fecha; resto vai literal
@@ -221,6 +233,13 @@ step st raw
   | Just _ <- psCode st =
       st { psOut = escapeHtmlT raw : psOut st }
 
+  -- HTML pass-through: dentro de bloco HTML, repassa verbatim;
+  -- termina ao ver linha em branco.
+  | psHtml st =
+      if T.null (T.strip raw)
+        then st { psHtml = False, psOut = "" : psOut st }
+        else st { psOut = raw : psOut st }
+
   -- abre code fence
   | T.isPrefixOf "```" raw =
       let lang = T.strip (T.drop 3 raw)
@@ -228,6 +247,16 @@ step st raw
       in  st' { psCode = Just lang
               , psOut  = T.concat ["<pre><code class=\"lang-", lang, "\">"] : psOut st'
               }
+
+  -- HTML block: linha que começa com '<tag' entra em pass-through
+  | isHtmlOpen raw =
+      let st' = flushAll st
+      in  st' { psHtml = True, psOut = raw : psOut st' }
+
+  -- linha de tabela: acumula
+  | isTableLine raw =
+      let st' = flushPara (flushList (flushBlockq st))
+      in  st' { psTable = raw : psTable st' }
 
   -- horizontal rule
   | T.strip raw `elem` ["---", "***", "___"] =
@@ -241,13 +270,13 @@ step st raw
 
   -- blockquote
   | T.isPrefixOf "> " raw =
-      let st' = flushPara (flushList st)
+      let st' = flushPara (flushList (flushTable st))
       in  st' { psBlockq = inline (T.drop 2 raw) : psBlockq st' }
 
   -- unordered list
   | T.isPrefixOf "- " raw || T.isPrefixOf "* " raw =
       let item = inline (T.drop 2 raw)
-          st0  = flushPara (flushBlockq st)
+          st0  = flushPara (flushBlockq (flushTable st))
           st1  = case psList st0 of
                    Just 'u' -> st0
                    _        -> let s = flushList st0 in s { psList = Just 'u', psOut = "<ul>" : psOut s }
@@ -256,7 +285,7 @@ step st raw
   -- ordered list "1. "
   | Just rest <- matchOrdered raw =
       let item = inline rest
-          st0  = flushPara (flushBlockq st)
+          st0  = flushPara (flushBlockq (flushTable st))
           st1  = case psList st0 of
                    Just 'o' -> st0
                    _        -> let s = flushList st0 in s { psList = Just 'o', psOut = "<ol>" : psOut s }
@@ -268,7 +297,7 @@ step st raw
 
   -- parágrafo normal
   | otherwise =
-      let st' = flushList (flushBlockq st)
+      let st' = flushList (flushBlockq (flushTable st))
       in  st' { psPara = raw : psPara st' }
 
 matchHeading :: T.Text -> Maybe (Int, T.Text)
@@ -288,9 +317,39 @@ matchOrdered raw =
 
 -- ---------------------------------------------------------------- Inline rules
 
--- Ordem importa: escape -> code (`x`) -> bold/italic -> links/imgs.
+-- Ordem importa: escape -> code (`x`) -> bold/italic -> links/imgs -> auto-link.
 inline :: T.Text -> T.Text
-inline = applyLinks . applyImgs . applyItalic . applyBold . applyCode . escapeHtmlT
+inline = applyAutoLink . applyLinks . applyImgs . applyItalic . applyBold . applyCode . escapeHtmlT
+
+-- | Converte URLs nuas (http://... ou https://...) em <a> clicável.
+-- Evita reprocessar URLs que já estão dentro de href="..." ou já viradas
+-- em <a>...</a> pelo applyLinks (esses casos já contêm "href=").
+applyAutoLink :: T.Text -> T.Text
+applyAutoLink t = go t
+  where
+    go input
+      | T.null input = ""
+      | otherwise =
+          case T.breakOn "http" input of
+            (before, rest)
+              | T.null rest -> before
+              | not (isUrlStart rest) -> T.concat [before, T.take 4 rest, go (T.drop 4 rest)]
+              -- já estamos dentro de um href="..." existente?
+              | endsWithHrefQuote before -> T.concat [before, T.take 4 rest, go (T.drop 4 rest)]
+              | otherwise ->
+                  let (url, after) = T.break (`elem` (" \t\n<\"'`)" :: String)) rest
+                  in T.concat [before, "<a href=\"", url, "\">", url, "</a>", go after]
+    -- só queremos "http://" ou "https://"
+    isUrlStart r =
+      T.isPrefixOf "http://" r || T.isPrefixOf "https://" r
+    -- detecta sufixos típicos onde NÃO devemos reprocessar (já dentro de href ou src)
+    endsWithHrefQuote b =
+      T.isSuffixOf "href=\"" b
+        || T.isSuffixOf "src=\"" b
+        || T.isSuffixOf "href='" b
+        || T.isSuffixOf "src='" b
+        || T.isSuffixOf ">" b           -- abertura de <a>http://...</a>
+        || T.isSuffixOf "](" b          -- texto](http://... do markdown
 
 applyCode :: T.Text -> T.Text
 applyCode t =
@@ -349,27 +408,3 @@ escapeHtmlT =
   . T.replace ">" "&gt;"
   . T.replace "&" "&amp;"
 
--- ---------------------------------------------------------------- ToSchema instances
--- Necessário para servant-swagger gerar o spec automático a partir dos tipos.
-
-instance ToSchema DU.RegisterUserDto
-instance ToSchema DU.LoginUserDto
-instance ToSchema DU.UserResponseDto
-instance ToSchema DU.LoginResponseDto
-instance ToSchema DU.SetRoleDto
-instance ToSchema DC.CategoryResponseDto
-instance ToSchema DO.CreateOccurrenceDto
-instance ToSchema DO.UpdateOccurrenceDto
-instance ToSchema DO.UpdateStatusDto
-instance ToSchema DO.OccurrenceResponseDto
-instance ToSchema DO.NearbyOccurrenceDto
-instance ToSchema DV.VoteResponseDto
-instance ToSchema DM.CreatePoliticianDto
-instance ToSchema DM.PoliticianResponseDto
-instance ToSchema DM.CreateMandateDto
-instance ToSchema DM.MandateResponseDto
-instance ToSchema DM.ScoreResponseDto
-instance ToSchema DCm.CreateCommentDto
-instance ToSchema DCm.CommentResponseDto
-instance ToSchema DCm.UpdateCommentDto
-instance ToSchema AC.AdminStatsDto
