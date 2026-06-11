@@ -52,28 +52,19 @@ services:
     # sites estáticos não aceitam o campo `plan` (são sempre gratuitos)
     staticPublishPath: ./front
     buildCommand: |
-      # Injeta a URL publica da API na meta tag de cada HTML, substituindo o
-      # placeholder content="" por content="$API_URL".
+      # Injeta a URL publica da API na meta tag api-base de cada HTML.
+      #
+      # A URL e FIXA aqui de proposito. Tentativas anteriores via env var
+      # (fromService property:host) injetavam o hostname INTERNO/privado
+      # "zelaai-api", que o navegador nao resolve -> todos os fetch falhavam
+      # com ERR_FAILED. O front roda no browser, entao precisa do dominio
+      # PUBLICO. Ele e deterministico (<nome>.onrender.com); se trocar o nome
+      # do servico ou usar dominio custom, atualize a linha abaixo.
       set -e
-      if [ -n "$API_URL" ]; then
-        # property:host devolve só o hostname (sem esquema); o front precisa
-        # de uma URL absoluta com https:// para o fetch funcionar.
-        API_BASE="https://$API_URL"
-        echo "Injecting api-base=$API_BASE into HTML files..."
-        find front -name "*.html" -exec sed -i "s|<meta name=\"api-base\" content=\"\"|<meta name=\"api-base\" content=\"$API_BASE\"|g" {} \;
-      else
-        echo "WARN: API_URL nao definida, front vai tentar mesmo host"
-      fi
+      API_BASE="https://zelaai-api.onrender.com"
+      echo "Injecting api-base=$API_BASE into HTML files..."
+      find front -name "*.html" -exec sed -i "s|<meta name=\"api-base\" content=\"\"|<meta name=\"api-base\" content=\"$API_BASE\"|g" {} \;
     autoDeploy: true
-    envVars:
-      # IMPORTANTE: NAO usar fromService property:host aqui. Para referencia
-      # entre servicos, o Render devolve o hostname INTERNO/privado ("zelaai-api"),
-      # que o navegador nao resolve -> fetch falha com ERR_FAILED.
-      # O front roda no browser, entao precisa do dominio PUBLICO. Como ele e
-      # deterministico (<nome>.onrender.com), fixamos aqui. Se trocar o nome do
-      # servico ou usar dominio custom, atualize este valor.
-      - key: API_URL
-        value: zelaai-api.onrender.com
     headers:
       - path: /*
         name: X-Frame-Options
