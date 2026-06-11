@@ -49,7 +49,7 @@ services:
   - type: web
     name: zelaai-front
     runtime: static
-    plan: free
+    # sites estáticos não aceitam o campo `plan` (são sempre gratuitos)
     staticPublishPath: ./front
     buildCommand: |
       # Injeta a URL publica da API na meta tag de cada HTML, substituindo o
