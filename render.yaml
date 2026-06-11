@@ -56,8 +56,11 @@ services:
       # placeholder content="" por content="$API_URL".
       set -e
       if [ -n "$API_URL" ]; then
-        echo "Injecting API_URL=$API_URL into HTML files..."
-        find front -name "*.html" -exec sed -i "s|<meta name=\"api-base\" content=\"\"|<meta name=\"api-base\" content=\"$API_URL\"|g" {} \;
+        # property:host devolve só o hostname (sem esquema); o front precisa
+        # de uma URL absoluta com https:// para o fetch funcionar.
+        API_BASE="https://$API_URL"
+        echo "Injecting api-base=$API_BASE into HTML files..."
+        find front -name "*.html" -exec sed -i "s|<meta name=\"api-base\" content=\"\"|<meta name=\"api-base\" content=\"$API_BASE\"|g" {} \;
       else
         echo "WARN: API_URL nao definida, front vai tentar mesmo host"
       fi
