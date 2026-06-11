@@ -66,11 +66,14 @@ services:
       fi
     autoDeploy: true
     envVars:
+      # IMPORTANTE: NAO usar fromService property:host aqui. Para referencia
+      # entre servicos, o Render devolve o hostname INTERNO/privado ("zelaai-api"),
+      # que o navegador nao resolve -> fetch falha com ERR_FAILED.
+      # O front roda no browser, entao precisa do dominio PUBLICO. Como ele e
+      # deterministico (<nome>.onrender.com), fixamos aqui. Se trocar o nome do
+      # servico ou usar dominio custom, atualize este valor.
       - key: API_URL
-        fromService:
-          name: zelaai-api
-          type: web
-          property: host       # URL do backend (sem trailing slash)
+        value: zelaai-api.onrender.com
     headers:
       - path: /*
         name: X-Frame-Options
