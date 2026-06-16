@@ -53,7 +53,6 @@ const charts = {};
 
 // --------------------------- Helpers ---------------------------------------
 
-const labelStatus = s => ({ open: "Aberto", in_progress: "Em andamento", resolved: "Resolvido" }[s] || s);
 const fmtMonth = (d) => d.toLocaleDateString("pt-BR", { month: "short", year: "2-digit" });
 
 function groupBy(arr, keyFn) {
