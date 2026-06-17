@@ -1,7 +1,7 @@
 import { Api } from "./api.js";
 import { Auth } from "./auth.js";
 import { Theme } from "./theme.js";
-import { escapeHtml, fmtDate } from "./util.js";
+import { escapeHtml } from "./util.js";
 
 Theme.mountToggle(document.querySelector(".header-actions"));
 
